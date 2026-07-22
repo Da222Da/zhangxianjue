@@ -10,8 +10,22 @@ export const dynamicRoutes = [
   {
     path: "/preview",
     name: "preview",
-    component: () => import("../views/Preview.vue"),
     mate: { menuName: "预览模式", menuPath: "/preview" },
+    redirect: "/formulas/base",
+    children: [
+      {
+        path: "/preview/base",
+        name: "previewBase",
+        component: () => import("../views/preview/Base.vue"),
+        mate: { menuName: "基础功能", menuPath: "/preview/base" },
+      },
+      {
+        path: "/preview/mermaid",
+        name: "previewMermaid",
+        component: () => import("../views/preview/Mermaid.vue"),
+        mate: { menuName: "mermaid 图表", menuPath: "/preview/mermaid" },
+      },
+    ],
   },
   {
     path: "/test",

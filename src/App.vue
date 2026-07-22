@@ -1,17 +1,16 @@
 <template>
-  <div class="markdown-container" ref="markdownRef"></div>
+  <div class="markdown-container" ref="editorRef"></div>
 </template>
 
 <script lang="ts" setup>
-import "cherry-markdown/dist/cherry-markdown.css";
 import "viewerjs/dist/viewer.css"; // 引入 Viewer.js 的 CSS 文件
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onBeforeUnmount, nextTick, watch } from "vue";
 import { useOptions } from "./hooks/index.ts";
-import Cherry from "cherry-markdown";
 
 // 定义组件配置
 defineOptions({ name: "Markdown" });
 
+// Props
 const props = defineProps({
   mode: {
     type: String,
@@ -21,23 +20,56 @@ const props = defineProps({
     type: String,
     default: "",
   },
-  PreviewConfig: {
+  config: {
     type: Object,
     default: () => ({}), // 默认配置
   },
 });
-const markdownRef = ref(null);
+
+// Hooks
 const { options } = useOptions(props);
 
-onMounted(() => {
-  if (markdownRef.value) {
-    new Cherry({
-      el: markdownRef.value,
-      value: props.value,
+// Ref
+const editorRef = ref<HTMLDivElement | null>(null);
+const editor = ref<Cherry | null>(null);
+const isInitialized = ref(false); // 标记编辑器是否已初始化
+
+// onMounted(() => {
+//   nextTick(() => {
+//     initEditor();
+//   });
+// });
+
+const initEditor = (value): void => {
+  if (editorRef.value === null || isInitialized.value) return;
+
+  try {
+    const config = {
+      el: editorRef.value,
+      value: value,
       ...options,
-    });
-  } else {
-    console.error("Markdown ref is not found");
+    };
+
+    const cherryInstance = new Cherry(config);
+    editor.value = cherryInstance;
+    isInitialized.value = true;
+  } catch (error) {
+    console.error("初始化 Cherry 编辑器失败", error);
+  }
+};
+watch(
+  () => props.value,
+  (newValue) => {
+    if (newValue) initEditor(newValue);
+  },
+  {
+    immediate: true,
+  },
+);
+
+onBeforeUnmount(() => {
+  if (editor.value) {
+    editor.value.destroy();
   }
 });
 </script>

@@ -1,45 +1,49 @@
-## 引入cherry并使用自己的[mermaid](https://mermaid.js.org/){target=_blank}
+## 引入cherry并使用自己的[mermaid](https://mermaid.js.org/){target=\_blank}
 
 ### 方式一，window下已经安装了mermaid
+
 ```html
 <script src="https://cdn.jsdelivr.net/npm/mermaid@11.16.0/dist/mermaid.min.js"></script>
 <script src="yourPath/cherry-markdown.core.js"></script>
 <script src="yourPath/addons/cherry-code-block-mermaid-plugin.js"></script>
 <script>
-Cherry.usePlugin(CherryCodeBlockMermaidPlugin, {
-  mermaid: window.mermaid,
-  mermaidAPI: window.mermaid,
-});
-var cherryEditor = new Cherry({id: 'markdown'});
+  Cherry.usePlugin(CherryCodeBlockMermaidPlugin, {
+    mermaid: window.mermaid,
+    mermaidAPI: window.mermaid,
+  });
+  var cherryEditor = new Cherry({ id: "markdown" });
 </script>
 ```
 
 ### 方式二，让cherry自动安装mermaid
+
 ```html
 <script src="yourPath/cherry-markdown.core.js"></script>
 <script src="yourPath/addons/cherry-code-block-mermaid-plugin.js"></script>
 <script>
-Cherry.usePlugin(CherryCodeBlockMermaidPlugin);
-var cherryEditor = new Cherry({
-  id: 'markdown',
-  engine: {
-    syntax: {
-      codeBlock: {
-        mermaid: {
-          showSourceToolbar: true,
-          src: 'https://cdn.jsdelivr.net/npm/mermaid@11.16.0/dist/mermaid.min.js',
+  Cherry.usePlugin(CherryCodeBlockMermaidPlugin);
+  var cherryEditor = new Cherry({
+    id: "markdown",
+    engine: {
+      syntax: {
+        codeBlock: {
+          mermaid: {
+            showSourceToolbar: true,
+            src: "https://cdn.jsdelivr.net/npm/mermaid@11.16.0/dist/mermaid.min.js",
+          },
         },
       },
     },
-  },
-});
+  });
 </script>
 ```
 
 ## 效果
+
 > 可以使用对应版本mermaid的语法
 
 - 思维导图：
+
 ```mermaid
 mindmap
   root((mindmap))
@@ -59,7 +63,9 @@ mindmap
       Pen and paper
       Mermaid
 ```
+
 - 统计图
+
 ```mermaid
     xychart-beta
     title "Sales Revenue"
@@ -68,7 +74,9 @@ mindmap
     bar [5000, 6000, 7500, 8200, 9500, 10500, 11000, 10200, 9200, 8500, 7000, 6000]
     line [5000, 6000, 7500, 8200, 9500, 10500, 11000, 10200, 9200, 8500, 7000, 6000]
 ```
+
 - 计划
+
 ```mermaid
 journey
     title My working day
