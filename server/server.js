@@ -4,7 +4,7 @@ const cors = require("cors");
 const adminArticleRouter = require("./routes/admin/article.js");
 const app = express();
 const PORT = process.env.PORT || 3000;
-const { notFoundHandler, errorHandler } = require("./middlewares/errorHandler"); // 导入错误处理中间件
+const { notFoundHandler, errorHandler } = require("./middlewares/errorHandler.js"); // 导入错误处理中间件
 
 app.use(cors()); // 允许跨域请求
 app.use(express.json()); // 解析 JSON 请求体

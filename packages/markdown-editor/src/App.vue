@@ -5,7 +5,7 @@
 <script lang="ts" setup>
 import "viewerjs/dist/viewer.css"; // 引入 Viewer.js 的 CSS 文件
 import { ref, onMounted, onBeforeUnmount, nextTick, watch } from "vue";
-import { useOptions } from "./hooks/index.ts";
+import { useOptions } from "./hooks/index.js";
 
 // 定义组件配置
 defineOptions({ name: "Markdown" });
