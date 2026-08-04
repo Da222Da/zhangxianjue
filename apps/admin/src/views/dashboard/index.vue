@@ -116,11 +116,9 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
-@import "@/assets/styles/variables.scss";
 .dashboard {
   .box-card {
     margin-bottom: 1rem;
-    // padding: 1rem;
     .user-info {
       display: flex;
       align-items: center;
@@ -154,7 +152,7 @@ onMounted(() => {
               margin: 5px 0 0;
               font-size: 1.5rem;
               font-weight: bold;
-              color: $primary;
+              color: var(--primary);
             }
           }
         }

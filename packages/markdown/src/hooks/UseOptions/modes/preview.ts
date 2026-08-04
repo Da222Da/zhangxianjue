@@ -1,5 +1,5 @@
 import Viewer from "viewerjs";
-export default (props: any) => {
+export default () => {
   return {
     // 主题
     theme: "light",
@@ -54,36 +54,36 @@ export default (props: any) => {
         }
       },
       // 异步渲染完成
-      afterAsyncRender: () => {
-        // 在这里，Mermaid 图表已经渲染完成，可以安全地绑定事件了
-        bindClickEventsToMermaidMindmapNodes(props);
-      },
+      // afterAsyncRender: () => {
+      //   // 在这里，Mermaid 图表已经渲染完成，可以安全地绑定事件了
+      //   bindClickEventsToMermaidMindmapNodes(props);
+      // },
     },
   };
 };
 
 // 绑定点击事件到 Mermaid Mindmap 图表节点
-function bindClickEventsToMermaidMindmapNodes(props: any) {
-  // 找到所有的 Mermaid 图表节点
-  const nodes = document.querySelectorAll(".cherry-mermaid-source-toolbar-panel .node.mindmap-node .nodeLabel p");
-  console.log("nodes::: ", nodes);
+// function bindClickEventsToMermaidMindmapNodes(props: any) {
+//   // 找到所有的 Mermaid 图表节点
+//   const nodes = document.querySelectorAll(".cherry-mermaid-source-toolbar-panel .node.mindmap-node .nodeLabel p");
+//   console.log("nodes::: ", nodes);
 
-  nodes.forEach((node: any) => {
-    // 防止重复绑定
-    if (node.dataset.listenerAdded) return;
-    node.dataset.listenerAdded = "true";
+//   nodes.forEach((node: any) => {
+//     // 防止重复绑定
+//     if (node.dataset.listenerAdded) return;
+//     node.dataset.listenerAdded = "true";
 
-    // 设置鼠标样式为手型
-    node.style.cursor = "pointer";
+//     // 设置鼠标样式为手型
+//     node.style.cursor = "pointer";
 
-    // 绑定点击事件
-    if (props.Config.clickToMermaidMindmapNodes) {
-      if (!node) return; // 如果没有找到目标元素，直接返回
-      // 从 DOM 元素中提取节点信息，例如 ID
-      const nodeId = node.id;
-      const nodeText = node.textContent.trim();
+//     // 绑定点击事件
+//     if (props.Config.clickToMermaidMindmapNodes) {
+//       if (!node) return; // 如果没有找到目标元素，直接返回
+//       // 从 DOM 元素中提取节点信息，例如 ID
+//       const nodeId = node.id;
+//       const nodeText = node.textContent.trim();
 
-      node.addEventListener("click", props.config.clickToMermaidMindmapNodes.bind({ nodeId, nodeText }));
-    }
-  });
-}
+//       node.addEventListener("click", props.config.clickToMermaidMindmapNodes.bind({ nodeId, nodeText }));
+//     }
+//   });
+// }

@@ -20,10 +20,16 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import("@/views/articles/index.vue"),
       },
       {
-        path: "/articles/:id", // 使用动态参数接收文章ID
+        path: "/articles/:id",
         name: "ArticleDetail",
         component: () => import("@/views/articles/Detail.vue"),
-        props: true, // 将路由参数作为组件的props传递
+        props: true,
+      },
+      {
+        path: "/articles/:id/edit",
+        name: "ArticleEdit",
+        component: () => import("@/views/articles/Edit.vue"),
+        props: true,
       },
       // {
       //   path: "/users",

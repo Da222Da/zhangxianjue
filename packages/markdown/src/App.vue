@@ -20,10 +20,6 @@ const props = defineProps({
     type: String,
     default: "",
   },
-  config: {
-    type: Object,
-    default: () => ({}), // 默认配置
-  },
 });
 
 // Hooks
@@ -33,12 +29,6 @@ const { options } = useOptions(props);
 const editorRef = ref<HTMLDivElement | null>(null);
 const editor = ref<Cherry | null>(null);
 const isInitialized = ref(false); // 标记编辑器是否已初始化
-
-// onMounted(() => {
-//   nextTick(() => {
-//     initEditor();
-//   });
-// });
 
 const initEditor = (value): void => {
   if (editorRef.value === null || isInitialized.value) return;

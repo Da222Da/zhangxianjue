@@ -1,18 +1,19 @@
 {
-  "name": "@zhangxianjue/markdown",
+  "name": "@zhangxianjue/markdown-vue3",
   "version": "1.0.0",
-  "description": "互联网 Markdown 编辑器",
+  "description": "浏览器 Markdown 编辑器",
   "type": "module",
-  "main": "dist/Markdown.umd.js",
-  "module": "dist/Markdown.es.js",
+  "main": "./dist/Markdown.umd.js",
+  "module": "./dist/Markdown.es.js",
   "types": "./types/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "scripts": {
     "dev": "tsx ./demo/run.config.ts",
     "build": "vite build",
-    "build:p": "npm run version:patch && npm run build "
+    "build:p": "npm run version:patch && npm run build"
   },
   "peerDependencies": {
     "vue": "^3.3.0",

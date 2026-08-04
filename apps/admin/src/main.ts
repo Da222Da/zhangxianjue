@@ -7,9 +7,13 @@ import "./assets/styles/global.css";
 
 import router from "./router";
 
+import Markdown from "@zhangxianjue/markdown";
+import "@zhangxianjue/markdown/dist/style.css";
+
 const app = createApp(App);
 
 app.use(ElementPlus, { size: "default" });
 app.use(router);
+app.use(Markdown as any);
 
 app.mount("#app");
