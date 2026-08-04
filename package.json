@@ -1,0 +1,25 @@
+{
+  "name": "zhangxianjue",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Da222Da/js-markdown-editor.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Da222Da/js-markdown-editor/issues"
+  },
+  "homepage": "https://github.com/Da222Da/js-markdown-editor#readme"
+}

@@ -9,7 +9,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "vue": "^3.5.40"
+    "@element-plus/icons-vue": "^2.3.2",
+    "axios": "^1.19.0",
+    "element-plus": "^2.14.3",
+    "normalize.css": "^8.0.1",
+    "vue": "^3.5.40",
+    "vue-router": "^5.2.0",
+    "@zhangxianjue/markdown": "^1.0.0"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",
@@ -17,6 +23,7 @@
     "@vue/tsconfig": "^0.9.1",
     "typescript": "~6.0.2",
     "vite": "^8.2.0",
+    "sass": "^1.79.4",
     "vue-tsc": "^3.3.8"
   }
 }

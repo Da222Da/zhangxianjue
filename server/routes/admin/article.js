@@ -35,12 +35,10 @@ router.get("/", async (req, res, next) => {
     // 5. 返回分页格式的数据
     res.json({
       status: true,
-      data: {
-        list: rows, // 当前页的数据列表
-        total: count, // 数据库中符合条件的总记录数
-        currentPage: currentPage, // 当前页码
-        pageSize: limit, // 每页条数
-      },
+      data: rows, // 当前页的数据列表
+      total: count, // 数据库中符合条件的总记录数
+      currentPage: currentPage, // 当前页码
+      pageSize: limit, // 每页条数
       message: "Articles fetched successfully",
     });
   } catch (error) {

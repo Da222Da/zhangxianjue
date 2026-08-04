@@ -1,0 +1,58 @@
+/* 引入 normalize.css */
+@import "normalize.css";
+@import "./variables.css";
+
+html,
+body,
+#app {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  background-color: var(--background-color);
+  color: var(--main_text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+  margin: 0;
+  padding: 0;
+}
+
+/* 修改滚动条整体样式 */
+::-webkit-scrollbar {
+  width: 2px;
+  /* 宽度 */
+  height: 2px;
+  /* 高度 */
+}
+
+/* 修改滚动条轨道 */
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  /* 轨道颜色 */
+  border-radius: 2cqh;
+  /* 圆角 */
+}
+
+/* 修改滚动条滑块 */
+::-webkit-scrollbar-thumb {
+  background: #dcdfe6;
+  /* 滑块颜色 */
+  border-radius: 2px;
+  /* 圆角 */
+}
+
+/* 鼠标悬停时修改滚动条滑块颜色 */
+::-webkit-scrollbar-thumb:hover {
+  background: #dcdfe6;
+  /* 鼠标悬停时滑块颜色 */
+}
+
+.page-main-container {
+  min-height: calc(100vh - var(--header-height));
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: 1rem;
+  background-color: var(--background-color);
+}
+
+.el-table {
+  --el-table-header-bg-color: #f5f7fa;
+}

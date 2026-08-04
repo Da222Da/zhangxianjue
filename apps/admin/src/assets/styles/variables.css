@@ -1,0 +1,30 @@
+:root {
+  /* 主题颜色 */
+  --primary: #409eff;
+  --success: #19be6b;
+  --info: #909399;
+  --warning: #ff9900;
+  --danger: #ed4014;
+
+  /* 文字颜色 */
+  --title-text: #17233d; /* 标题文字颜色 */
+  --main-text: #515a6e; /* 内容文字颜色 */
+  --sub-text: #808695; /* 次要文字颜色 */
+  --disabled: #c5c8ce; /* 禁用颜色 */
+
+  /* 边框与背景 */
+  --border-color: #dcdee2; /* 边框颜色 */
+  --divider-color: #e8eaec; /* 分割线颜色 */
+  --background-color: #f8f8f9; /* 背景颜色 */
+
+  /* 字体大小 */
+  --font-title-size: 18px;
+  --font-normal-size: 16px;
+  --font-sub-size: 14px;
+  --font-micro-size: 12px;
+
+  /* 布局尺寸 */
+  --header-height: 60px;
+  --sidebar-width: 200px;
+  --content-width: 1280px;
+}

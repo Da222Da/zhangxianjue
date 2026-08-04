@@ -12,7 +12,7 @@ app.use(express.urlencoded({ extended: false })); // 解析 URL 编码
 app.use(express.static("public")); // 静态文件目录
 
 // 注册 admin 文章路由
-app.use("/admin/article", adminArticleRouter);
+app.use("/api/admin/article", adminArticleRouter);
 
 // ========== 404 Not Found 找不到接口（放在所有路由之后） ==========
 app.use(notFoundHandler);
