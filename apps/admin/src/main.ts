@@ -7,8 +7,8 @@ import "./assets/styles/global.css";
 
 import router from "./router";
 
-import Markdown from "@zhangxianjue/markdown";
-import "@zhangxianjue/markdown/dist/style.css";
+import Markdown from "@zhangxianjue/markdown-vue3";
+import "@zhangxianjue/markdown-vue3/dist/style.css";
 
 const app = createApp(App);
 

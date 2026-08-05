@@ -12,7 +12,10 @@ import { ref, onMounted, computed, watch } from "vue";
 const props = defineProps({
   modelValue: Boolean,
   title: String,
-  content: String,
+  content: {
+    type: String,
+    default: "",
+  },
 });
 
 const visiable = ref(false);

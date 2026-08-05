@@ -56,3 +56,8 @@ body,
 .el-table {
   --el-table-header-bg-color: #f5f7fa;
 }
+
+.cherry-flex-toc.cherry-flex-toc__fixed {
+  position: absolute !important;
+  top: 20px;
+}

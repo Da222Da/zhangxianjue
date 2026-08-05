@@ -47,15 +47,21 @@ const initEditor = (value): void => {
     console.error("初始化 Cherry 编辑器失败", error);
   }
 };
-watch(
-  () => props.value,
-  (newValue) => {
-    if (newValue) initEditor(newValue);
-  },
-  {
-    immediate: true,
-  },
-);
+
+onMounted(() => {
+  nextTick(() => {
+    initEditor(props.value);
+  });
+});
+// watch(
+//   () => props.value,
+//   (newValue) => {
+//     if (newValue) initEditor(newValue);
+//   },
+//   {
+//     immediate: true,
+//   },
+// );
 
 onBeforeUnmount(() => {
   if (editor.value) {

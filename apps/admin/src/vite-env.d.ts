@@ -6,7 +6,7 @@ declare module "*.vue" {
   export default component;
 }
 
-declare module "@zhangxianjue/markdown" {
+declare module "@zhangxianjue/markdown-vue3" {
   const Markdown: any;
   export { Markdown };
 }
