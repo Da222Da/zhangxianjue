@@ -10,6 +10,9 @@ const articleService = {
   updateArticle(id: number, data: any) {
     return apiClient.put(`/admin/article/${id}`, data);
   },
+  createArticle(data: any) {
+    return apiClient.post("/admin/article", data);
+  },
 };
 
 export default articleService;

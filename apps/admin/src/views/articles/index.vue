@@ -1,6 +1,9 @@
 <!-- src/views/roles/index.vue -->
 <template>
   <div>
+    <div style="margin-bottom: 10px; display: flex; justify-content: flex-end">
+      <el-button type="primary" size="small" @click="openDialog('add')"> 新增 </el-button>
+    </div>
     <el-card>
       <el-table :data="articles">
         <el-table-column prop="title" label="标题" width="180" />
@@ -9,14 +12,16 @@
         <el-table-column prop="updatedAt" label="更新时间" width="250" />
         <el-table-column fixed="right" label="操作" width="120">
           <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="handleArticlesDialog(row, 'preview')"> 详情 </el-button>
-            <el-button link type="primary" size="small" @click="handleArticlesDialog(row, 'edit')">编辑</el-button>
+            <el-button link type="primary" size="small" @click="openDialog('view', row)"> 详情 </el-button>
+            <el-button link type="primary" size="small" @click="openDialog('edit', row)">编辑</el-button>
           </template>
         </el-table-column>
       </el-table>
     </el-card>
 
-    <ArticlesDialog :modelValue="articlesDialogVisible" :articles="articlesInfo" @close="articlesDialogVisible = false" />
+    <ArticlesDialog :type="dialogType" :markdownMode="markdownMode" :modelValue="articlesAddDialogVisible" :articles="articlesInfo" @close="articlesAddDialogVisible = false" @update="fetchArticles" />
+    <ArticlesDialog :type="dialogType" :markdownMode="markdownMode" :modelValue="articlesDetailsDialogVisible" :articles="articlesInfo" @close="articlesDetailsDialogVisible = false" />
+    <ArticlesDialog :type="dialogType" :markdownMode="markdownMode" :modelValue="articlesEditDialogVisible" :articles="articlesInfo" @close="articlesEditDialogVisible = false" @update="fetchArticles" />
   </div>
 </template>
 
@@ -28,10 +33,14 @@ import articleService from "@/api/articleService";
 import ArticlesDialog from "./ArticlesDialog.vue";
 
 const articles = ref([]);
+const dialogType = ref("view");
+const articlesAddDialogVisible = ref(false); // 新增文章
+const articlesDetailsDialogVisible = ref(false); // 查看文章
+const articlesEditDialogVisible = ref(false); // 编辑文章
+const markdownMode = ref("preview"); // Markdown 模式
 const articlesDialogVisible = ref(false);
-const articlesInfo = reactive({
+let articlesInfo = reactive({
   id: "",
-  mode: "preview",
   title: "",
   content: "",
 });
@@ -47,14 +56,31 @@ const fetchArticles = async () => {
   }
 };
 
-// 处理文章弹框
-const handleArticlesDialog = (article, mode = "preview") => {
-  const { title, content, id } = article;
-  articlesDialogVisible.value = true;
-  articlesInfo.id = id;
-  articlesInfo.mode = mode;
-  articlesInfo.title = title;
-  articlesInfo.content = content;
+// 打开弹框
+const openDialog = (type, row) => {
+  dialogType.value = type;
+
+  switch (type) {
+    case "add":
+      articlesAddDialogVisible.value = true;
+      markdownMode.value = "add";
+      articlesInfo = {
+        id: "",
+        title: "",
+        content: "",
+      };
+      break;
+    case "view":
+      articlesDetailsDialogVisible.value = true;
+      markdownMode.value = "preview";
+      articlesInfo = row;
+      break;
+    case "edit":
+      articlesEditDialogVisible.value = true;
+      markdownMode.value = "edit";
+      articlesInfo = row;
+      break;
+  }
 };
 
 // 在组件挂载时获取文章列表
