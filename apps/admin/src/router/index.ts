@@ -19,18 +19,7 @@ const routes: Array<RouteRecordRaw> = [
         name: "Articles",
         component: () => import("@/views/articles/index.vue"),
       },
-      {
-        path: "/articles/:id",
-        name: "ArticleDetail",
-        component: () => import("@/views/articles/Detail.vue"),
-        props: true,
-      },
-      {
-        path: "/articles/:id/edit",
-        name: "ArticleEdit",
-        component: () => import("@/views/articles/Edit.vue"),
-        props: true,
-      },
+
       // {
       //   path: "/users",
       //   name: "Users",

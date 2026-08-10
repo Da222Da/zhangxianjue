@@ -7,6 +7,9 @@ const articleService = {
   getArticleDetail(id: number) {
     return apiClient.get(`/admin/article/${id}`);
   },
+  updateArticle(id: number, data: any) {
+    return apiClient.put(`/admin/article/${id}`, data);
+  },
 };
 
 export default articleService;

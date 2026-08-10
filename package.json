@@ -12,7 +12,7 @@
   "scripts": {
     "admin": "npm run dev -w admin",
     "server": "npm run dev -w server",
-    "markdown": "npm run build -w markdown"
+    "markdown": "npm run build -w markdown-vue3"
   },
   "repository": {
     "type": "git",

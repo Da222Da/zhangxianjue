@@ -22,6 +22,9 @@ const props = defineProps({
   },
 });
 
+// emits
+const emit = defineEmits(["change"]);
+
 // Hooks
 const { options } = useOptions(props);
 
@@ -29,6 +32,7 @@ const { options } = useOptions(props);
 const editorRef = ref<HTMLDivElement | null>(null);
 const editor = ref<Cherry | null>(null);
 const isInitialized = ref(false); // 标记编辑器是否已初始化
+const currentContent = ref(""); // 内部缓存最新的 Markdown 内容
 
 const initEditor = (value): void => {
   if (editorRef.value === null || isInitialized.value) return;
@@ -40,12 +44,20 @@ const initEditor = (value): void => {
       ...options,
     };
 
-    const cherryInstance = new Cherry(config);
-    editor.value = cherryInstance;
+    editor.value = new Cherry(config);
     isInitialized.value = true;
   } catch (error) {
     console.error("初始化 Cherry 编辑器失败", error);
   }
+};
+
+// 手动获取内容的方法，方便父组件通过 ref 主动调用
+const getMarkdownContent = (): string => {
+  // 优先使用 Cherry 实例自带的 getValue 方法确保获取最新
+  if (editor.value && typeof editor.value.getValue === "function") {
+    return editor.value.getValue();
+  }
+  return currentContent.value;
 };
 
 onMounted(() => {
@@ -53,20 +65,16 @@ onMounted(() => {
     initEditor(props.value);
   });
 });
-// watch(
-//   () => props.value,
-//   (newValue) => {
-//     if (newValue) initEditor(newValue);
-//   },
-//   {
-//     immediate: true,
-//   },
-// );
 
 onBeforeUnmount(() => {
   if (editor.value) {
     editor.value.destroy();
   }
+});
+
+defineExpose({
+  editor,
+  getMarkdownContent, // 暴露获取内容的方法
 });
 </script>
 
