@@ -3,6 +3,7 @@ import "./style.css";
 import App from "./App.vue";
 import ElementPlus from "element-plus";
 import "element-plus/theme-chalk/src/index.scss"; // 引入 Element Plus 的 SCSS
+import "element-plus/theme-chalk/display.css";
 import "./assets/styles/global.css";
 
 import router from "./router";

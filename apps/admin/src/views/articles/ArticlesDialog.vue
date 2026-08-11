@@ -1,6 +1,6 @@
 <template>
   <el-dialog v-model="visiable" :title="dialogTitle" width="80%" @close="handleColse" destroy-on-close>
-    <el-input v-model="articleTitle" style="width: 240px; margin-bottom: 10px" placeholder="请输入文章标题" />
+    <el-input v-if="type !== 'view'" v-model="articleTitle" style="width: 240px; margin-bottom: 10px" placeholder="请输入文章标题" />
     <div style="height: 65vh">
       <Markdown :value="articles.content" :mode="markdownMode" ref="markdownRef" />
     </div>
@@ -32,7 +32,14 @@ const props = defineProps({
 
 const emit = defineEmits(["close", "update"]);
 const visiable = ref(props.modelValue);
-const articleTitle = ref(props.articles.title || "");
+const articleTitle = computed({
+  get() {
+    return props.articles.title;
+  },
+  set(val) {
+    props.articles.title = val;
+  },
+});
 const dialogTitle = computed(() => {
   switch (props.type) {
     case "edit":

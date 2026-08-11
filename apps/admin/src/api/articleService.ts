@@ -13,6 +13,9 @@ const articleService = {
   createArticle(data: any) {
     return apiClient.post("/admin/article", data);
   },
+  deleteArticle(id: number) {
+    return apiClient.delete(`/admin/article/${id}`);
+  },
 };
 
 export default articleService;
