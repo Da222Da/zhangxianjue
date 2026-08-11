@@ -1,0 +1,245 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg-color: #0a1628;
+  --bg-gradient: linear-gradient(135deg, #0a1628 0%, #1a3a5c 50%, #0d2137 100%);
+  --primary-color: #c9a227;
+  --accent-color: #4fc3f7;
+  --text-color: #e8f0f8;
+  --font-family: 'Noto Serif SC', 'Source Han Serif SC', Georgia, serif;
+  --chart-opacity: 0.85;
+  --panel-bg: rgba(10, 30, 55, 0.55);
+  --border-color: rgba(201, 162, 39, 0.35);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #app {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: var(--bg-gradient);
+  color: var(--text-color);
+  font-family: var(--font-family);
+}
+
+/* Custom scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(201, 162, 39, 0.45) rgba(10, 22, 40, 0.6);
+}
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(10, 22, 40, 0.6);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(201, 162, 39, 0.45);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(201, 162, 39, 0.7);
+}
+
+.page-scroll {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px;
+  scrollbar-gutter: stable;
+}
+
+/* Fix Element Plus white table backgrounds */
+.el-table {
+  --el-table-bg-color: transparent !important;
+  --el-table-tr-bg-color: transparent !important;
+  --el-table-header-bg-color: rgba(10, 40, 70, 0.8) !important;
+  --el-table-row-hover-bg-color: rgba(79, 195, 247, 0.12) !important;
+  --el-table-border-color: rgba(201, 162, 39, 0.2) !important;
+  --el-table-text-color: var(--text-color) !important;
+  --el-table-header-text-color: var(--primary-color) !important;
+  background: transparent !important;
+  color: var(--text-color) !important;
+}
+
+.el-table th.el-table__cell,
+.el-table td.el-table__cell {
+  background: transparent !important;
+  border-bottom-color: rgba(201, 162, 39, 0.15) !important;
+}
+
+.el-table__body tr.el-table__row--striped td.el-table__cell {
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+
+.el-table__empty-block {
+  background: transparent !important;
+}
+
+.el-table__inner-wrapper::before {
+  background-color: rgba(201, 162, 39, 0.2) !important;
+}
+
+.el-pagination {
+  --el-pagination-bg-color: transparent;
+  --el-pagination-text-color: var(--text-color);
+  --el-pagination-button-bg-color: rgba(10, 40, 70, 0.6);
+  --el-pagination-hover-color: var(--primary-color);
+}
+
+.el-dialog {
+  --el-dialog-bg-color: #132a45;
+  --el-dialog-title-font-size: 18px;
+  --el-text-color-primary: var(--text-color);
+}
+
+.el-form-item__label {
+  color: var(--text-color) !important;
+}
+
+.el-input__wrapper,
+.el-textarea__inner,
+.el-select__wrapper {
+  background-color: rgba(10, 30, 55, 0.7) !important;
+  box-shadow: 0 0 0 1px rgba(201, 162, 39, 0.3) inset !important;
+}
+
+.el-input__inner,
+.el-textarea__inner {
+  color: var(--text-color) !important;
+}
+
+.el-button--primary {
+  --el-button-bg-color: var(--primary-color);
+  --el-button-border-color: var(--primary-color);
+  --el-button-text-color: #0a1628;
+  --el-button-hover-bg-color: #dfb83a;
+  --el-button-hover-border-color: #dfb83a;
+}
+
+.el-loading-mask {
+  background-color: rgba(10, 22, 40, 0.7) !important;
+}
+
+.el-table__body-wrapper,
+.el-table__header-wrapper,
+.el-table__footer-wrapper,
+.el-table__fixed-right,
+.el-table__fixed,
+.el-scrollbar__view {
+  background: transparent !important;
+}
+
+.el-table .el-table__cell {
+  background-color: transparent !important;
+}
+
+.el-table tr {
+  background-color: transparent !important;
+}
+
+.el-overlay {
+  background-color: rgba(0, 0, 0, 0.55) !important;
+}
+
+.el-select-dropdown,
+.el-popper.is-light {
+  background: #132a45 !important;
+  border: 1px solid rgba(201, 162, 39, 0.3) !important;
+}
+
+.el-select-dropdown__item {
+  color: var(--text-color) !important;
+  &.is-hovering, &:hover {
+    background: rgba(79, 195, 247, 0.15) !important;
+  }
+  &.is-selected {
+    color: var(--primary-color) !important;
+  }
+}
+
+.el-tag {
+  --el-tag-bg-color: rgba(201, 162, 39, 0.15);
+  --el-tag-border-color: rgba(201, 162, 39, 0.35);
+  --el-tag-text-color: var(--primary-color);
+}
+
+.el-upload-dragger {
+  background: rgba(10, 30, 55, 0.6) !important;
+  border-color: rgba(201, 162, 39, 0.35) !important;
+}
+
+.el-message-box {
+  --el-messagebox-title-color: var(--text-color);
+  background: #132a45 !important;
+  border: 1px solid rgba(201, 162, 39, 0.3);
+}
+
+.el-input-number {
+  .el-input__wrapper {
+    background-color: rgba(10, 30, 55, 0.7) !important;
+  }
+  .el-input-number__decrease,
+  .el-input-number__increase {
+    background: rgba(10, 40, 70, 0.8) !important;
+    color: var(--text-color) !important;
+    border-color: rgba(201, 162, 39, 0.25) !important;
+  }
+}
+
+.el-slider {
+  --el-slider-main-bg-color: var(--primary-color);
+  --el-slider-runway-bg-color: rgba(255, 255, 255, 0.12);
+  .el-input-number {
+    width: 110px;
+  }
+}
+
+.el-radio-button__inner {
+  background: rgba(10, 30, 55, 0.6) !important;
+  color: var(--text-color) !important;
+  border-color: rgba(201, 162, 39, 0.25) !important;
+}
+
+.el-radio-button__original-radio:checked + .el-radio-button__inner {
+  background: rgba(201, 162, 39, 0.3) !important;
+  color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  box-shadow: none !important;
+}
+
+.panel-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  padding: 16px;
+}
+
+.panel-title {
+  font-size: 15px;
+  color: var(--primary-color);
+  margin-bottom: 12px;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-title::before {
+  content: '';
+  width: 3px;
+  height: 14px;
+  background: var(--primary-color);
+  border-radius: 2px;
+}
