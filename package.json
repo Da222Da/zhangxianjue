@@ -6,10 +6,12 @@
   "private": true,
   "workspaces": [
     "packages/*",
+    "client",
     "admin",
     "server"
   ],
   "scripts": {
+    "client": "npm run dev -w client",
     "admin": "npm run dev -w admin",
     "server": "npm run dev -w server",
     "markdown": "npm run build -w markdown-vue3"
@@ -24,5 +26,10 @@
   "bugs": {
     "url": "https://github.com/Da222Da/js-markdown-editor/issues"
   },
-  "homepage": "https://github.com/Da222Da/js-markdown-editor#readme"
+  "homepage": "https://github.com/Da222Da/js-markdown-editor#readme",
+  "dependencies": {
+    "@headlessui/vue": "^1.7.23",
+    "@heroicons/vue": "^2.2.0",
+    "client": "^0.0.1"
+  }
 }
