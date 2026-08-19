@@ -1,0 +1,41 @@
+{
+  "name": "@zhangxianjue/markdown-editor-v3",
+  "version": "1.0.0",
+  "description": "浏览器 Markdown 编辑器",
+  "type": "module",
+  "main": "./dist/Markdown.umd.js",
+  "module": "./dist/Markdown.es.js",
+  "types": "./types/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "dev": "tsx ./demo/run.config.ts",
+    "build": "vite build",
+    "build:p": "npm run version:patch && npm run build"
+  },
+  "peerDependencies": {
+    "vue": "^3.3.0",
+    "vue-router": "^4.5.0"
+  },
+  "devDependencies": {
+    "@types/mathjax": "^0.0.40",
+    "@types/node": "^26.1.1",
+    "@vitejs/plugin-vue": "^4.5.2",
+    "element-plus": "^2.9.1",
+    "tsx": "^4.22.3",
+    "vite": "^4.5.0",
+    "vite-plugin-dts": "^5.0.1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cherry-markdown": "^0.11.0",
+    "echarts": "^6.1.0",
+    "katex": "^0.18.1",
+    "mathjax": "^4.1.3",
+    "viewerjs": "^1.11.8"
+  }
+}

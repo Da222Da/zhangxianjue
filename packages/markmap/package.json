@@ -1,0 +1,34 @@
+{
+  "name": "@zhangxianjue/markmap",
+  "version": "1.0.0",
+  "description": "markmap 思维导图",
+  "type": "module",
+  "main": "dist/markmap.umd.js",
+  "module": "dist/markmap.es.js",
+  "types": "./types/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "tsx ./demo/run.config.ts",
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^4.5.2",
+    "element-plus": "^2.9.1",
+    "typescript": "^5.7.3",
+    "vite": "^4.5.0",
+    "vue": "^3.3.0",
+    "vue-router": "^4.5.0"
+  },
+  "dependencies": {
+    "markmap-common": "^0.18.9",
+    "markmap-lib": "^0.18.11",
+    "markmap-toolbar": "^0.18.12",
+    "markmap-view": "^0.18.10",
+    "@zhangxianjue/markdown-editor-v3": "^1.0.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
