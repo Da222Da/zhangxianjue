@@ -2,7 +2,7 @@
   "development": {
     "username": "root",
     "password": "4890441",
-    "database": "zhangxianjue_development",
+    "database": "zhangxianjue_database",
     "host": "127.0.0.1",
     "dialect": "mysql",
     "timezone": "+08:00"

@@ -16,6 +16,12 @@ export default {
       content: {
         type: Sequelize.TEXT,
       },
+      cover: {
+        type: Sequelize.TEXT,
+      },
+      description: {
+        type: Sequelize.TEXT,
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
