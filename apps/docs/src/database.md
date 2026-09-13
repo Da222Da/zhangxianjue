@@ -1,6 +1,12 @@
 # 数据表
 
-## User 用户表
+## 目录
+
+[[toc]]
+
+## 数据表设计
+
+### User 用户表
 
 | 字段名    | 类型    | 描述             |
 | :-------- | :------ | :--------------- |
@@ -15,25 +21,50 @@
 
 1. 生成 User 模型文件与迁移文件：`npx sequelize-cli-ts-js model:generate --name User --attributes username:string,email:string,avatar:string,password:string,role_id:int`
 
-2. 执行迁移文件: `sequelize db:migrate`
+2. 执行迁移文件: `npx sequelize-cli-ts-js db:migrate`
 
-## Article 文章表
+### Article 文章表
 
-| 字段名     | 类型    | 描述       |
-| :--------- | :------ | :--------- |
-| id         | INTEGER | 主键，自增 |
-| title      | STRING  | 标题，唯一 |
-| content    | TEXT    | 内容，唯一 |
-| created_at | DATE    | 创建时间   |
-| updated_at | DATE    | 更新时间   |
+| 字段名      | 类型    | 描述       |
+| :---------- | :------ | :--------- |
+| id          | INTEGER | 主键，自增 |
+| title       | STRING  | 标题，唯一 |
+| content     | TEXT    | 内容，唯一 |
+| cover       | TEXT    | 封面       |
+| desctiption | TEXT    | 描述       |
+| created_at  | DATE    | 创建时间   |
+| updated_at  | DATE    | 更新时间   |
 
 1.  生成 Articles 模型文件与迁移文件：`npx sequelize-cli-ts-js model:generate --name Article --attributes title:string,content:text`
 
-2.  执行迁移文件: `sequelize db:migrate`
+2.  执行迁移文件: `npx sequelize-cli-ts-js db:migrate`
 
 ## FAQ 常见问题
 
-### 1. 如何使用 Sequelize 操作 MySQL 数据库？
+### 1. 如何安装 MySQL 数据库？？
+
+1. 安装 Docker Desktop，并启动它；
+
+2. 在项目根目录下创建 docker-compose.yml 文件，并添加以下内容：
+
+   ```yml
+   version: "3.8"
+
+   services:
+   mysql:
+   image: mysql:8.0 # 使用的镜像及版本
+   container_name: mysql-server # 容器名称（相当于 --name）
+   environment: # 环境变量（相当于 -e）
+   MYSQL_ROOT_PASSWORD: 4890441 # root 用户密码（务必修改！）
+   MYSQL_DATABASE: zhangxianjue_database # 容器启动时自动创建的数据库名（可选）
+   ports: # 端口映射（相当于 -p）- "3306:3306" # 宿主机端口:容器端口，宿主机端口可改
+   ```
+
+3. 在Docker Desktop中，安装并启动 MySQL 数据库：docker-compose up -d
+
+4. 在 MySQL 数据库可视化工具中，查看是否链接成功。
+
+### 2. 如何链接 MySQL 数据库？
 
 1. 安装依赖：
 
@@ -78,13 +109,25 @@
    const __filename = fileURLToPath(import.meta.url);
    const __dirname = dirname(__filename);
    const env = process.env.NODE_ENV || "development";
-   const config = JSON.parse(readFileSync(join(__dirname, "..", "config", "config.json"), "utf-8"))[env];
-   const sequelizeConnection: Sequelize = new Sequelize(config.database, config.username, config.password, config);
+   const config = JSON.parse(
+     readFileSync(join(__dirname, "..", "config", "config.json"), "utf-8"),
+   )[env];
+   const sequelizeConnection: Sequelize = new Sequelize(
+     config.database,
+     config.username,
+     config.password,
+     config,
+   );
 
    export default sequelizeConnection;
    ```
 
-3. 使用 `npx sequelize-cli-ts-js model:generate --name Article --attributes title:string,content:text`指令: 生成模型文件和执行文件
+### 3. 如何创建 MySQL 数据表？
+
+> Models 模型文件，将数据表抽象成 JavaScript 类（包含表结构、增删改查方法、表间关系）。
+> Migrations 迁移文件，将数据库的每一次建表、加字段、改类型，都变成可执行的代码文件。3. 使用 `npx
+
+1. sequelize-cli-ts-js model:generate --name Article --attributes title:string,content:text`指令: 生成模型文件和执行文件
 
    ```ts
    "use strict";
@@ -112,14 +155,11 @@
    export default Article;
    ```
 
-4. 执行迁移文件: `sequelize db:migrate`
+2. 执行迁移文件: `sequelize db:migrate`
 
-### 2. Models(模型文件)和Migrations(迁移文件)？
+### 4. .sequelizerc 配置文件是干嘛的？
 
-- `Models 模型文件`，将数据表抽象成 JavaScript 类（包含表结构、增删改查方法、表间关系）。
-- `Migrations 迁移文件`，将数据库的每一次建表、加字段、改类型，都变成可执行的代码文件。
-
-### 3. 如何指定 Sequelize-CLI 生成文件的路径？ —— .sequelizerc
+> sequelize-cli 的配置文件，用于配置迁移文件路径、模型文件路径等。
 
 ```js
 const path = require("path");

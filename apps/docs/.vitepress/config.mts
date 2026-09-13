@@ -12,7 +12,7 @@ export default defineConfig({
           link: "/",
           items: [
             {
-              text: "服务器项目",
+              text: "Web 服务器",
               link: "src/server-project.md",
               items: [
                 { text: "数据表设计", link: "src/database.md" },
