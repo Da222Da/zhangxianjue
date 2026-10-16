@@ -15,7 +15,10 @@
     "dev:docs": "npm run dev -w admin",
     "dev:server": "npm run dev -w server",
     "build:markdown": "npm run build -w markdown-editor-v3",
-    "build:markmap": "npm run build -w markmap"
+    "build:markmap": "npm run build -w markmap",
+    "dev:sketch": "npm run dev -w @zhangxianjue/vue-markmap-sketch",
+    "build:sketch": "npm run build -w @zhangxianjue/vue-markmap-sketch",
+    "test:sketch": "npm run test -w @zhangxianjue/vue-markmap-sketch"
   },
   "repository": {
     "type": "git",
