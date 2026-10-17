@@ -1,4 +1,20 @@
 /**
+ * 把服务端返回的时间字符串格式化为本地日期
+ * @param value - ISO 时间字符串，可能为空
+ * @returns 形如 2026-10-17 的日期；无法解析时返回空串
+ */
+export function formatDate(value: string | null | undefined): string {
+  if (!value) {
+    return "";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  return date.toLocaleDateString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit" });
+}
+
+/**
  * 为 Markdown 文本中的所有链接添加 `parent` 查询参数
  * @param text - 包含 Markdown 链接的原始文本
  * @param parentValue - 需要添加到 URL 查询参数中的 parent 值

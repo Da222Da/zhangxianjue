@@ -57,9 +57,8 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref } from "vue";
+import { onMounted } from "vue";
 // import { useAuthStore } from "@/store/auth";
-import { User, Lock } from "@element-plus/icons-vue";
 
 // import statsService from "@/api/statsService";
 // import type { DashboardStats } from "@/types/api";
@@ -81,26 +80,8 @@ import { User, Lock } from "@element-plus/icons-vue";
 
 // const dashboardStats = ref<DashboardStats>();
 
-// 默认头像
-const defaultAvatar = "http://img.zzqlyx.com/20240903/yk.png";
-
-// 模拟角色名称映射（实际应从后端获取或在 store 中定义）
-enum roles {
-  "超级管理员",
-  "管理员",
-  "普通用户",
-}
-
-// 获取角色名称
-const getRoleName = (roleId: number): string => {
-  return roles[roleId] || "未知角色";
-};
-
-// 格式化日期
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  return date.toLocaleString();
-};
+// 默认头像、角色名映射、日期格式化三个辅助函数原为模板中那些被注释的卡片服务，
+// 因当前无任何引用会触发 noUnusedLocals，已移除；恢复仪表盘时可从 git 历史取回。
 // 获取统计数据
 // const getDashboardStats = async (): Promise<void> => {
 //   try {

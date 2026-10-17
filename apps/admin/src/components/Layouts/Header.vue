@@ -1,17 +1,20 @@
+<!-- src/components/Layouts/Header.vue -->
 <template>
   <el-header height="60px" class="header">
     <div class="header-content">
       <!-- 左侧系统名称 -->
       <div class="logo">
-        <!-- <h2>用户权限系统</h2> -->
+        <h2>后台管理</h2>
       </div>
 
       <!-- 右侧用户信息和操作 -->
       <div class="user-info">
         <el-dropdown trigger="click">
           <span class="el-dropdown-link">
-            <!-- <el-avatar :src="user?.avatar || defaultAvatar" :size="36" class="avatar"></el-avatar> -->
-            <span class="username">{{ user?.username }}</span>
+            <el-avatar :src="authStore.user?.avatar || undefined" :size="36" class="avatar">
+              {{ authStore.displayName.charAt(0) }}
+            </el-avatar>
+            <span class="username">{{ authStore.displayName }}</span>
           </span>
           <template #dropdown>
             <el-dropdown-menu>
@@ -25,36 +28,32 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
-import { ElMessageBox, ElMessage } from "element-plus";
-// import { useAuthStore } from "@/store/auth";
+import { onMounted } from "vue";
+import { ElMessageBox } from "element-plus";
+import { useAuth } from "@/composables/useAuth";
 
-// const authStore = useAuthStore();
-
-// 获取用户信息
-// const user = computed(() => authStore.user);
-
-// 默认头像
-const defaultAvatar = "http://img.zzqlyx.com/20240903/yk.png";
+const { authStore, loadUser, logout } = useAuth();
 
 // 处理退出登录
-// const handleLogout = () => {
-//   ElMessageBox.confirm("确定要退出登录吗？", "提示", {
-//     confirmButtonText: "确定",
-//     cancelButtonText: "取消",
-//     type: "info",
-//   })
-//     .then(() => {
-//       authStore.logout();
-//     })
-//     .catch(() => {
-//       // 用户取消退出
-//     });
-// };
+const handleLogout = () => {
+  ElMessageBox.confirm("确定要退出登录吗？", "提示", {
+    confirmButtonText: "确定",
+    cancelButtonText: "取消",
+    type: "info",
+  })
+    .then(() => logout())
+    .catch(() => {
+      // 用户取消退出，无需处理
+    });
+};
+
+// 令牌持久化在 localStorage，刷新页面后 user 可能为空，进入布局时补齐
+onMounted(() => {
+  void loadUser();
+});
 </script>
 
 <style lang="scss" scoped>
-// @import "@/assets/styles/variables.scss";
 .header {
   background-color: var(--primary); /* Element Plus 默认主题色 */
   display: flex;
@@ -94,19 +93,5 @@ const defaultAvatar = "http://img.zzqlyx.com/20240903/yk.png";
   color: white;
   margin-right: 16px;
   cursor: pointer;
-}
-
-.guest-info {
-  display: flex;
-  align-items: center;
-}
-
-.guest-info .btn-text {
-  color: white;
-  margin-left: 8px;
-}
-
-.guest-info .btn-text:hover {
-  color: #ffd04b;
 }
 </style>

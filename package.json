@@ -10,15 +10,14 @@
     "server"
   ],
   "scripts": {
+    "dev": "concurrently -n server,admin,client -c green,magenta,cyan \"npm:dev:server\" \"npm:dev:admin\" \"npm:dev:client\"",
     "dev:client": "npm run dev -w client",
     "dev:admin": "npm run dev -w admin",
-    "dev:docs": "npm run dev -w admin",
     "dev:server": "npm run dev -w server",
     "build:markdown": "npm run build -w markdown-editor-v3",
-    "build:markmap": "npm run build -w markmap",
-    "dev:sketch": "npm run dev -w @zhangxianjue/vue-markmap-sketch",
-    "build:sketch": "npm run build -w @zhangxianjue/vue-markmap-sketch",
-    "test:sketch": "npm run test -w @zhangxianjue/vue-markmap-sketch"
+    "dev:markmap": "npm run dev -w @zhangxianjue/markmap",
+    "build:markmap": "npm run build -w @zhangxianjue/markmap",
+    "test:markmap": "npm run test -w @zhangxianjue/markmap"
   },
   "repository": {
     "type": "git",
@@ -33,9 +32,9 @@
   "homepage": "https://github.com/Da222Da/js-markdown-editor#readme",
   "dependencies": {
     "@headlessui/vue": "^1.7.23",
-    "@heroicons/vue": "^2.2.0",
-    "client": "^0.0.1",
-    "mysql": "^2.18.1",
-    "server": "^1.0.0"
+    "@heroicons/vue": "^2.2.0"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6"
   }
 }

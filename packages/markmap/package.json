@@ -1,34 +1,72 @@
 {
   "name": "@zhangxianjue/markmap",
-  "version": "1.0.0",
-  "description": "markmap 思维导图",
+  "version": "0.1.0",
+  "description": "手绘风格的 Markdown 思维导图 Vue 3 组件（rough.js + d3）",
   "type": "module",
-  "main": "dist/markmap.umd.js",
-  "module": "dist/markmap.es.js",
+  "main": "./dist/markmap.cjs",
+  "module": "./dist/markmap.es.js",
   "types": "./types/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "types",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "import": "./dist/markmap.es.js",
+      "require": "./dist/markmap.cjs"
+    },
+    "./style.css": "./dist/style.css",
+    "./package.json": "./package.json"
+  },
+  "sideEffects": [
+    "**/*.css"
   ],
   "scripts": {
-    "dev": "tsx ./demo/run.config.ts",
-    "build": "vite build"
+    "dev": "vite --config playground/vite.config.ts",
+    "build": "vite build",
+    "typecheck": "vue-tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "node tests/e2e/run.mjs",
+    "test:e2e:shot": "node tests/e2e/run.mjs --screenshot",
+    "prepublishOnly": "npm run test && npm run build"
   },
-  "devDependencies": {
-    "@vitejs/plugin-vue": "^4.5.2",
-    "element-plus": "^2.9.1",
-    "typescript": "^5.7.3",
-    "vite": "^4.5.0",
-    "vue": "^3.3.0",
-    "vue-router": "^4.5.0"
+  "peerDependencies": {
+    "vue": "^3.3.0"
   },
   "dependencies": {
-    "markmap-common": "^0.18.9",
-    "markmap-lib": "^0.18.11",
-    "markmap-toolbar": "^0.18.12",
-    "markmap-view": "^0.18.10",
-    "@zhangxianjue/markdown-editor-v3": "^1.0.0"
+    "d3-flextree": "^2.1.2",
+    "d3-hierarchy": "^3.1.2",
+    "d3-selection": "^3.0.0",
+    "d3-zoom": "^3.0.0",
+    "markdown-it": "^15.0.2",
+    "roughjs": "^4.6.6"
   },
-  "keywords": [],
+  "devDependencies": {
+    "@types/d3-flextree": "^2.1.4",
+    "@types/d3-hierarchy": "^3.1.7",
+    "@types/d3-selection": "^3.0.12",
+    "@types/d3-zoom": "^3.0.9",
+    "@types/node": "^22.10.2",
+    "@vitejs/plugin-vue": "^6.0.10",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4",
+    "vite-plugin-dts": "^5.1.2",
+    "vitest": "^5.0.4",
+    "vue": "^3.5.44",
+    "vue-tsc": "^3.3.13"
+  },
+  "keywords": [
+    "vue3",
+    "markmap",
+    "markdown",
+    "mindmap",
+    "roughjs",
+    "hand-drawn",
+    "sketch"
+  ],
   "author": "",
   "license": "ISC"
 }

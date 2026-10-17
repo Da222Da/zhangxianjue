@@ -11,9 +11,12 @@
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
     "@zhangxianjue/markdown-editor-v3": "^1.0.0",
+    "@zhangxianjue/markmap": "*",
     "axios": "^1.19.0",
     "element-plus": "^2.14.3",
     "normalize.css": "^8.0.1",
+    "pinia": "^4.1.0",
+    "pinia-plugin-persistedstate": "^4.7.1",
     "vue": "^3.5.40",
     "vue-router": "^5.2.0"
   },

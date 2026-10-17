@@ -1,0 +1,264 @@
+/**
+ * markmap 样式。
+ *
+ * 所有类名以 `mvs-` 前缀命名，方便导出时按前缀收集规则内联进 SVG
+ * （见 core/export.ts 的 collectComponentStyles）。
+ *
+ * 字体 / 字号 / 行高 / 内边距由 renderer 写成内联样式，
+ * 以保证与 measure.ts 的测量参数一致；这里只放不参与测量的视觉样式。
+ */
+
+.mvs-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 200px;
+  overflow: hidden;
+
+  --mvs-text-color: #2f3542;
+  --mvs-canvas-bg: transparent;
+  --mvs-code-bg: rgba(47, 53, 66, 0.06);
+}
+
+.mvs-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* 交给 d3-zoom 处理手势，禁用浏览器默认的滚动/缩放手势 */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+  background: var(--mvs-canvas-bg);
+}
+
+.mvs-svg:active {
+  cursor: grabbing;
+}
+
+/* 只读模式：隐藏折叠标识、去掉手型光标，缩放平移仍然可用 */
+.mvs-svg.mvs-readonly .mvs-node,
+.mvs-svg.mvs-readonly .mvs-node-toggle {
+  cursor: default;
+}
+
+.mvs-svg.mvs-readonly .mvs-node-toggle {
+  display: none !important;
+}
+
+/* ---------------- 节点 ---------------- */
+
+.mvs-node {
+  cursor: pointer;
+}
+
+.mvs-node-hit {
+  pointer-events: all;
+}
+
+.mvs-node-fo {
+  /* 文本不该拦截指针事件，否则拖拽平移会被 foreignObject 吃掉 */
+  pointer-events: none;
+  overflow: visible;
+}
+
+.mvs-node-body {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  color: var(--mvs-text-color);
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.mvs-node-text > :first-child {
+  margin-top: 0;
+}
+
+.mvs-node-text > :last-child {
+  margin-bottom: 0;
+}
+
+.mvs-node-text p {
+  margin: 0;
+}
+
+.mvs-node-text a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  /* 只给链接放开指针事件：其余文本区域仍然不拦，否则拖拽平移会被 foreignObject 吃掉 */
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* 内链接图标在文本前，外链接图标在文本后（图标由 markdown.ts 作为文本注入） */
+.mvs-node-text a.mvs-link--external {
+  text-decoration-style: dotted;
+}
+
+.mvs-node-image {
+  display: block;
+  margin-top: 6px;
+  max-width: 100%;
+  border-radius: 4px;
+  /* 和链接一样只放开图片自己：其余文本区域仍不拦，否则拖拽平移会被 foreignObject 吃掉 */
+  pointer-events: auto;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* 只有开着内置查看器时才给放大光标，免得关掉之后光标在骗人 */
+.mvs-container.mvs-image-viewer .mvs-node-image {
+  cursor: zoom-in;
+}
+
+.mvs-node-text code {
+  padding: 0 3px;
+  border-radius: 3px;
+  background: var(--mvs-code-bg);
+  font-family: monospace;
+  font-size: 0.92em;
+}
+
+.mvs-node-code {
+  margin: 6px 0 0;
+  padding: 6px 8px;
+  border-radius: 4px;
+  background: var(--mvs-code-bg);
+  font-family: monospace;
+  font-size: 0.85em;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.mvs-node-code code {
+  padding: 0;
+  background: none;
+  font-size: 1em;
+}
+
+/* ---------------- 折叠标识 ---------------- */
+
+.mvs-node-toggle {
+  cursor: pointer;
+}
+
+.mvs-node-toggle-hit {
+  pointer-events: all;
+}
+
+/* ---------------- 连线 ---------------- */
+
+.mvs-link {
+  fill: none;
+}
+
+/* ---------------- hover 高亮路径 ---------------- */
+
+.mvs-has-highlight .mvs-node,
+.mvs-has-highlight .mvs-link {
+  transition: opacity 0.18s ease;
+}
+
+.mvs-has-highlight .mvs-node:not(.mvs-active),
+.mvs-has-highlight .mvs-link:not(.mvs-active) {
+  opacity: 0.22;
+}
+
+/* ---------------- 图片查看器 ---------------- */
+
+/* 覆盖在画布上的一层，尺寸跟随组件容器（容器已是 position: relative） */
+.mvs-lightbox {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  background: rgba(20, 25, 34, 0.86);
+  outline: none;
+}
+
+.mvs-lightbox-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: grab;
+  /* 交给 pointer 事件做拖拽平移，禁用浏览器自己的滚动/缩放手势 */
+  touch-action: none;
+}
+
+.mvs-lightbox-stage.mvs-dragging {
+  cursor: grabbing;
+}
+
+.mvs-lightbox-image {
+  /* 原始大小即「适应窗口」：1:1 时整张图已经完整可见，放大再从 1 往上走 */
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  transform-origin: center;
+  user-select: none;
+  -webkit-user-drag: none;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+}
+
+.mvs-lightbox-hint {
+  margin: 0;
+  padding: 6px 16px;
+  color: #e6b980;
+  font-size: 12px;
+  text-align: center;
+}
+
+.mvs-lightbox-hint a {
+  color: #9cc4ff;
+}
+
+.mvs-lightbox-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px 14px;
+}
+
+.mvs-lightbox-btn {
+  min-width: 40px;
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #f2f4f8;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.mvs-lightbox-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.mvs-lightbox-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.mvs-lightbox-reset {
+  min-width: 52px;
+}
+
+.mvs-lightbox-scale {
+  min-width: 52px;
+  color: #f2f4f8;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}

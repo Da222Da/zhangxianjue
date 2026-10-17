@@ -1,5 +1,5 @@
 import express from "express";
-import { register, login, getUserInfo } from "../controllers/authController.ts";
+import { register, login, getUserInfo, refreshToken } from "../controllers/authController.ts";
 import { authMiddleware } from "../middlewares/authMiddleware.ts";
 
 const router = express.Router();
@@ -78,6 +78,63 @@ router.post("/register", register);
  *         description: Internal server error
  */
 router.post("/login", login);
+
+/**
+ * @swagger
+ * /api/auth/refresh:
+ *   post:
+ *     tags: [Auth]
+ *     summary: 刷新访问令牌
+ *     description: |
+ *       用登录时返回的 refreshToken 换取新的 accessToken。
+ *       不轮换 refreshToken：服务端无状态存储，无法吊销已签发的令牌，
+ *       轮换只会制造「旧令牌依然有效」的假象。refreshToken 到期后需重新登录。
+ *
+ *       ⚠️ 必须传 refreshToken：访问令牌不能用于刷新，误传会返回 401。
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - refreshToken
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *                 description: 登录接口返回的 refreshToken
+ *                 example: eyJhbGciOiJIUzI1NiIsInR...
+ *     responses:
+ *       200:
+ *         description: 刷新成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: boolean
+ *                   example: true
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 200
+ *                 message:
+ *                   type: string
+ *                   example: 令牌刷新成功
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     token:
+ *                       type: string
+ *                       description: 新的 accessToken
+ *       400:
+ *         description: 未提供 refreshToken
+ *       401:
+ *         description: refreshToken 无效或已过期，或误传了访问令牌
+ *       500:
+ *         description: 服务器内部错误
+ */
+router.post("/refresh", refreshToken);
 
 /**
  * @swagger

@@ -1,21 +1,22 @@
+// src/services/apiClient.ts
 import axiosInstance from "./axiosInstance";
+import type { ApiResponse } from "@/types/api";
 
 interface RequestOptions {
   headers?: Record<string, string>;
-  params?: Record<string, any>;
-  data?: Record<string, any>;
-  [key: string]: any;
+  params?: Record<string, unknown>;
 }
 
-interface ApiResponse<T = any> {
-  status: boolean;
-  message: string;
-  data: T;
-}
-
+/**
+ * 统一的请求客户端
+ *
+ * ⚠️ 返回值约定（与 server 的响应体契约一一对应，改动前必须同步两端）：
+ * - `get` 返回**完整响应体**（含 status / 分页字段），由调用方自行取 `data`
+ * - `post` / `put` / `delete` 返回**解包后的 data**
+ */
 const apiClient = {
-  async get<T>(url: string, options?: RequestOptions): Promise<ApiResponse<T>> {
-    const response: any = await axiosInstance.get<T>(url, {
+  async get<T = unknown>(url: string, options?: RequestOptions): Promise<ApiResponse<T>> {
+    const response = await axiosInstance.get<ApiResponse<T>>(url, {
       ...options,
       params: options?.params,
     });
@@ -29,8 +30,8 @@ const apiClient = {
     return res;
   },
 
-  async post<T>(url: string, data?: any, options?: RequestOptions): Promise<ApiResponse<T>> {
-    const response: any = await axiosInstance.post<T>(url, data, options);
+  async post<T = unknown>(url: string, data?: unknown, options?: RequestOptions): Promise<T> {
+    const response = await axiosInstance.post<ApiResponse<T>>(url, data, options);
     const res = response.data;
 
     if (!res.status) {
@@ -40,8 +41,8 @@ const apiClient = {
     return res.data;
   },
 
-  async put<T>(url: string, data?: any, options?: RequestOptions): Promise<ApiResponse<T>> {
-    const response: any = await axiosInstance.put<T>(url, data, options);
+  async put<T = unknown>(url: string, data?: unknown, options?: RequestOptions): Promise<T> {
+    const response = await axiosInstance.put<ApiResponse<T>>(url, data, options);
     const res = response.data;
 
     if (!res.status) {
@@ -51,8 +52,8 @@ const apiClient = {
     return res.data;
   },
 
-  async delete<T>(url: string, options?: RequestOptions): Promise<ApiResponse<T>> {
-    const response: any = await axiosInstance.delete<T>(url, options);
+  async delete<T = unknown>(url: string, options?: RequestOptions): Promise<T> {
+    const response = await axiosInstance.delete<ApiResponse<T>>(url, options);
     const res = response.data;
 
     if (!res.status) {

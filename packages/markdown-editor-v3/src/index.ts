@@ -15,6 +15,7 @@ Cherry.usePlugin(CherryCodeBlockMermaidPlugin);
 
 // 导出
 export { Markdown };
+export type { FileUploadHandler, MarkdownEditorProps, MarkdownMode } from "./types.js";
 
 export default {
   install: (app: App) => {

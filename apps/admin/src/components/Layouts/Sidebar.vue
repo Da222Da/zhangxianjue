@@ -11,14 +11,8 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import {
-  House,
-  User,
-  Setting, // 使用存在的图标名称
-  Lock,
-  Document,
-} from "@element-plus/icons-vue";
+import { useRoute } from "vue-router";
+import { Calendar, Document, FolderOpened, Notebook } from "@element-plus/icons-vue";
 import type { Component } from "vue";
 
 interface MenuItem {
@@ -26,26 +20,22 @@ interface MenuItem {
   name: string;
   icon: Component;
   title: string;
-  [prop: string]: any;
 }
 
 const menuItems: MenuItem[] = [
   //   { path: "/", name: "Dashboard", icon: House, title: "首页" },
-  { path: "/articles", name: "Articles", icon: Document, title: "测试 1" },
+  { path: "/timeline", name: "Timeline", icon: Calendar, title: "时间轴管理" },
+  { path: "/articles", name: "Articles", icon: Document, title: "文章管理" },
+  { path: "/notes", name: "Notes", icon: Notebook, title: "笔记管理" },
+  { path: "/categories", name: "Categories", icon: FolderOpened, title: "分类管理" },
   //   { path: "/users", name: "Users", icon: User, title: "用户管理" },
   //   { path: "/roles", name: "Roles", icon: Setting, title: "角色管理" }, // 确保使用正确的图标名称
   //   { path: "/permissions", name: "Permissions", icon: Lock, title: "权限管理" },
 ];
 
 const route = useRoute();
-const router = useRouter();
 
 const activeMenu = computed(() => route.path);
-
-// 导航方法（可选）
-const navigate = (path: string) => {
-  router.push(path);
-};
 </script>
 
 <style lang="scss" scoped>

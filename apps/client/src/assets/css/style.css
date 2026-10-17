@@ -1,18 +1,78 @@
+/*
+ * client 全局样式。
+ *
+ * 视觉基调：**手绘风**（长期约定，见根目录 Prompt.md）。
+ * 色板与笔触取自 markmap 的思维导图：蓝 (#4C72B0) 为主、橙 (#DD8452) 为辅、
+ * 深墨 (#2F3542) 描边、暖白纸面做底；边框用「八向不等半径」模拟手画的歪斜矩形。
+ *
+ * ⚠️ 本文件在 main.ts 里**晚于 Element Plus 引入**，靠先后顺序覆盖 EP 的主题变量
+ *    与少量组件样式。调整引入顺序会让手绘风整体失效。
+ */
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow: rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  /* ===== 手绘色板 ===== */
+  --ink: #2f3542;
+  --ink-soft: #5b6270;
+  --paper: #fbfaf5;
+  --surface: #fffefa;
+  --pencil: #d9d5c9;
+  --blue: #4c72b0;
+  --blue-soft: #e9eff8;
+  --orange: #dd8452;
+  --orange-soft: #fbece2;
+
+  /* ===== 语义令牌（其它文件只用这一层，不直接引用上面的色值）===== */
+  --text: var(--ink-soft);
+  --text-h: var(--ink);
+  --bg: var(--paper);
+  --border: var(--pencil);
+  --code-bg: #f1eee4;
+  --accent: var(--blue);
+  --accent-bg: var(--blue-soft);
+  --accent-border: rgb(76 114 176 / 45%);
+  --social-bg: rgb(241 238 228 / 65%);
+  --shadow: rgb(47 53 66 / 10%) 0 10px 15px -3px, rgb(47 53 66 / 6%) 0 4px 6px -2px;
+
+  /* 品牌令牌：顶部导航、面包屑、卡片墙共用 */
+  --brand-accent: var(--blue);
+  --brand-accent-soft: var(--blue-soft);
+
+  /* ===== 手绘笔触 ===== */
+  /* 八个角的半径互不相同，浏览器会把它画成一个「歪掉的圆角矩形」 */
+  --sketch-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  --sketch-radius-sm: 14px 6px 16px 8px / 8px 16px 6px 14px;
+  --sketch-line: 1.6px;
+  --sketch-shadow: rgb(47 53 66 / 12%);
+  --paper-dot: rgb(47 53 66 / 7%);
+
+  /* 手绘波浪线（给标题下划线、头部底边复用）。mask 用，颜色由 background-color 决定 */
+  --squiggle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='6' viewBox='0 0 48 6'%3E%3Cpath d='M0 4 Q 6 1 12 4 T 24 4 T 36 4 T 48 4' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
 
   --sans: system-ui, "Segoe UI", Roboto, sans-serif;
   --heading: system-ui, "Segoe UI", Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
+
+  /* ===== 品牌与布局令牌 ===== */
+
+  /* 顶部导航高度：Header 与 Layout 共用。⚠️ 高度只在这里定义一次，
+     改它两边同时生效 —— 之前 60px 在 Header 和 Layout 各写了一遍，改一处必漏一处 */
+  --header-height: 72px;
+
+  /* 内容区最大宽度，与顶部导航的左右边界对齐 */
+  --content-max-width: 1240px;
+
+  /* ===== Element Plus 主题对齐手绘色板 ===== */
+  --el-color-primary: var(--blue);
+  --el-color-primary-light-3: #7f9bc5;
+  --el-color-primary-light-5: #a6bbd8;
+  --el-color-primary-light-7: #cdd9ea;
+  --el-color-primary-light-8: #dde5f1;
+  --el-color-primary-light-9: #eef2f8;
+  --el-color-primary-dark-2: #3d5b8d;
+  --el-font-family: var(--sans);
+  --el-text-color-primary: var(--ink);
+  --el-text-color-regular: var(--ink-soft);
+  --el-border-radius-base: 4px;
 
   font: 18px/145% var(--sans);
   letter-spacing: 0.18px;
@@ -31,16 +91,43 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow: rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+    --ink: #e8e5dd;
+    --ink-soft: #a9aeb9;
+    --paper: #17181c;
+    --surface: #1e2025;
+    --pencil: #3a3d46;
+    --blue: #8fb0e0;
+    --blue-soft: rgb(143 176 224 / 16%);
+    --orange: #e5a077;
+    --orange-soft: rgb(229 160 119 / 14%);
+
+    --text: var(--ink-soft);
+    --text-h: var(--ink);
+    --bg: var(--paper);
+    --border: var(--pencil);
+    --code-bg: #23252b;
+    --accent: var(--blue);
+    --accent-bg: var(--blue-soft);
+    --accent-border: rgb(143 176 224 / 45%);
+    --social-bg: rgb(35 37 43 / 65%);
+    --shadow: rgb(0 0 0 / 40%) 0 10px 15px -3px, rgb(0 0 0 / 25%) 0 4px 6px -2px;
+
+    --brand-accent: var(--blue);
+    --brand-accent-soft: var(--blue-soft);
+
+    --sketch-shadow: rgb(0 0 0 / 45%);
+    --paper-dot: rgb(232 229 221 / 8%);
+
+    /* 深色下 EP 主色的浅色梯级要整体压暗，否则浅底按钮会糊成一片 */
+    --el-color-primary: var(--blue);
+    --el-color-primary-light-3: #6d8bb5;
+    --el-color-primary-light-5: #55708f;
+    --el-color-primary-light-7: #3d5168;
+    --el-color-primary-light-8: #2e3f52;
+    --el-color-primary-light-9: #232e3b;
+    --el-color-primary-dark-2: #a8c3e8;
+    --el-text-color-primary: var(--ink);
+    --el-text-color-regular: var(--ink-soft);
   }
 
   #social .button-icon {
@@ -50,12 +137,16 @@
 
 body {
   margin: 0;
+  /* 纸面 + 极淡的点阵，像方格稿纸；点阵用 radial-gradient 画，不额外加载图片 */
+  background-color: var(--bg);
+  background-image: radial-gradient(var(--paper-dot) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
 h1,
 h2 {
   font-family: var(--heading);
-  font-weight: 500;
+  font-weight: 700;
   color: var(--text-h);
 }
 
@@ -80,6 +171,98 @@ h2 {
 p {
   margin: 0;
 }
+
+/* ==========================================================================
+   手绘风公共件
+   ========================================================================== */
+
+/* 一块歪斜的纸片：卡片、输入框、图片容器都可以套 */
+.sketch-box {
+  background: var(--surface);
+  border: var(--sketch-line) solid var(--ink);
+  border-radius: var(--sketch-radius);
+  box-shadow: 4px 4px 0 var(--sketch-shadow);
+}
+
+/* 标题下的手绘波浪线。宿主元素需要是 inline-block 以便线贴着文字宽度 */
+.sketch-underline {
+  position: relative;
+  display: inline-block;
+}
+
+.sketch-underline::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  bottom: -8px;
+  height: 6px;
+  background-color: var(--brand-accent);
+  -webkit-mask: var(--squiggle) repeat-x;
+  mask: var(--squiggle) repeat-x;
+  -webkit-mask-size: 48px 6px;
+  mask-size: 48px 6px;
+  opacity: 0.85;
+}
+
+/* 小标签前的手绘方块，用在「分类」这类小标题上 */
+.sketch-marker::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 8px;
+  background: var(--orange);
+  transform: rotate(-4deg);
+}
+
+/* ===== Element Plus 组件的手绘化（只覆盖 client 实际用到的） ===== */
+
+.el-button {
+  border-radius: var(--sketch-radius-sm);
+}
+
+.el-button--primary {
+  box-shadow: 2px 2px 0 var(--sketch-shadow);
+}
+
+.el-button--primary:active {
+  /* 按下时向左上「压」进去一格，像按在纸上 */
+  transform: translate(1px, 1px);
+  box-shadow: none;
+}
+
+.el-tag {
+  border-radius: 12px 4px 10px 5px / 5px 10px 4px 12px;
+}
+
+.el-alert {
+  border: var(--sketch-line) solid var(--border);
+  border-radius: 14px 6px 16px 8px / 8px 16px 6px 14px;
+}
+
+.el-divider {
+  border-top: 1.5px dashed var(--border);
+  background: transparent;
+}
+
+.el-skeleton__item {
+  border-radius: var(--sketch-radius-sm);
+}
+
+/*
+ * 文章详情的 markdown 纸张与悬浮目录由 cherry-markdown 自带样式绘制（圆角卡片）。
+ * 这里只覆盖外框，让它们和手绘纸片同一套；⚠️ 类名来自第三方包，
+ * 且其 CSS 随路由懒加载晚于本文件注入，必须带 !important 才能生效。
+ */
+.cherry-previewer,
+.cherry-flex-toc {
+  border: var(--sketch-line) solid var(--ink) !important;
+  border-radius: var(--sketch-radius-sm) !important;
+  box-shadow: 4px 4px 0 var(--sketch-shadow) !important;
+}
+
+/* ===== 工具类 ===== */
 
 .w-100 {
   width: 100%;

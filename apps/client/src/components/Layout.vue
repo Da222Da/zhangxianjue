@@ -30,14 +30,20 @@ import Breadcrumb from "./Breadcrumb.vue";
 const BreadcrumbHeight = ref(30);
 const contentStyle = computed(() => {
   return {
-    height: `calc(100% - ${BreadcrumbHeight.value}px`,
+    /*
+     * ⚠️ 这里原来少了一个右括号（`calc(100% - 30px`），属于非法 CSS，
+     * 浏览器会整条丢弃 —— 于是容器没有高度，页面里的 `height: 100%`
+     * 全部退化成 auto，内容高度失去约束。已补上闭合括号。
+     */
+    height: `calc(100% - ${BreadcrumbHeight.value}px)`,
   };
 });
 </script>
 
 <style scoped>
 .box-content {
-  height: calc(100vh - 60px);
+  /* 与 Header 共用同一个高度令牌，避免两处各写一个像素值、改一处漏一处 */
+  height: calc(100vh - var(--header-height));
   padding: 1rem;
   box-sizing: border-box;
   overflow-y: auto;

@@ -1,95 +1,61 @@
-// // src/store/auth.ts
-// import { defineStore } from "pinia";
-// import authService from "@/api/authService";
-// import { User } from "@/types/api";
-// import router from "@/router";
-// import { ElNotification } from "element-plus";
+// src/store/auth.ts
+import { defineStore } from "pinia";
+import type { LoginResponse, User } from "@/types/api";
 
-// interface AuthState {
-//   user: User | null;
-//   accessToken: string | null;
-//   refreshToken: any;
-// }
+interface AuthState {
+  /** 当前登录用户，刷新后由 useAuth().loadUser() 补齐 */
+  user: User | null;
+  accessToken: string | null;
+  refreshToken: string | null;
+}
 
-// export const useAuthStore = defineStore("auth", {
-//   state: (): AuthState => ({
-//     user: null,
-//     accessToken: localStorage.getItem("accessToken"),
-//     refreshToken: localStorage.getItem("refreshToken"),
-//   }),
-//   getters: {
-//     isAuthenticated: (state) => !!state.accessToken && !!state.user,
-//   },
-//   persist: true, // 状态持久化
-//   actions: {
-//     async login(params: { username: string; password: string }) {
-//       try {
-//         const { data } = await authService.login(params);
-//         this.accessToken = data.token;
-//         this.refreshToken = data.refreshToken;
+/**
+ * 登录态状态层
+ *
+ * ⚠️ 只作状态容器，**不发请求**。登录/退出等编排统一放在 `@/composables/useAuth`，
+ * 以此避免 `axiosInstance → store → authService → apiClient → axiosInstance` 的循环依赖。
+ */
+export const useAuthStore = defineStore("auth", {
+  state: (): AuthState => ({
+    user: null,
+    accessToken: null,
+    refreshToken: null,
+  }),
 
-//         localStorage.setItem("accessToken", this.accessToken);
-//         localStorage.setItem("refreshToken", this.refreshToken);
+  getters: {
+    /** 是否已登录，路由守卫与请求拦截器均以此为准 */
+    isAuthenticated: (state): boolean => !!state.accessToken,
+    displayName: (state): string => state.user?.username ?? "",
+  },
 
-//         await this.fetchUser();
-//         ElNotification({
-//           title: "提示",
-//           message: "欢迎进入系统！",
-//           type: "success",
-//         });
-//         router.push({ name: "Dashboard" });
-//       } catch (error) {
-//         ElNotification({
-//           title: "登录失败",
-//           message: "请检查用户名和密码。",
-//           type: "error",
-//         });
-//         throw error;
-//       }
-//     },
-//     async register(params: { username: string; email: string; password: string }) {
-//       try {
-//         await authService.register(params);
-//         ElNotification({
-//           title: "成功",
-//           message: "注册成功！请登录。",
-//           type: "success",
-//         });
-//       } catch (error) {
-//         throw error;
-//       }
-//     },
-//     async fetchUser() {
-//       try {
-//         const { data } = await authService.getUser();
-//         this.user = data || {};
-//       } catch (error) {
-//         console.error("获取用户信息失败", error);
-//       }
-//     },
-//     logout() {
-//       this.user = null;
-//       this.accessToken = null;
-//       this.refreshToken = null;
+  actions: {
+    /** 写入登录接口返回的双令牌 */
+    setSession({ token, refreshToken }: LoginResponse) {
+      this.accessToken = token;
+      this.refreshToken = refreshToken;
+    },
 
-//       localStorage.removeItem("accessToken");
-//       localStorage.removeItem("refreshToken");
+    /**
+     * 仅更新访问令牌
+     * 供请求拦截器静默刷新后回写，refreshToken 保持不变（服务端不轮换）
+     */
+    setAccessToken(token: string) {
+      this.accessToken = token;
+    },
 
-//       router.push({ name: "Login" });
-//     },
-//     async refreshToken() {
-//       try {
-//         const { data } = await authService.refreshToken(this.accessToken || "");
-//         this.accessToken = data.token;
-//         this.refreshToken = data.refreshToken;
+    /** 更新用户信息 */
+    setUser(user: User) {
+      this.user = user;
+    },
 
-//         localStorage.setItem("accessToken", this.accessToken);
-//         localStorage.setItem("refreshToken", this.refreshToken);
+    /** 清空会话：退出登录、令牌失效时调用 */
+    clearSession() {
+      this.user = null;
+      this.accessToken = null;
+      this.refreshToken = null;
+    },
+  },
 
-//         await this.fetchUser();
-//       } catch (error) {
-//         throw error;
-//       }
-//     },
-//   },
-// });
+  // 持久化到 localStorage，刷新页面后保持登录态
+  persist: true,
+});

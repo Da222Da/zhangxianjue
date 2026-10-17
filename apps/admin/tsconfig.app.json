@@ -5,6 +5,11 @@
     "types": ["vite/client"],
     "allowArbitraryExtensions": true,
 
+    /* 路径别名：与 vite.config.ts 的 resolve.alias 保持一致，缺了它 tsc 无法解析 @/ 导入 */
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+
     /* Linting */
     "noUnusedLocals": true,
     "noUnusedParameters": true,

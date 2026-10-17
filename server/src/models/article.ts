@@ -1,24 +1,77 @@
 "use strict";
 import { Model, DataTypes } from "sequelize";
+import type { Optional } from "sequelize";
 import sequelize from "./connection.ts";
+
 export interface ArticleAttributes {
+  id: number;
   title: string;
   content: string;
-  cover: string;
-  description: string;
+  cover: string | null;
+  description: string | null;
+  /** 分类 id（关联 Categories 表）；null 表示未分类 */
+  category_id: number | null;
+  /** 关联笔记 id（关联 Notes 表）；null 表示未关联 */
+  note_id: number | null;
+  /** 排序号，升序；0 表示未排版 */
+  sort: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
-class Article extends Model<ArticleAttributes> implements ArticleAttributes {
-  title!: string;
-  content!: string;
-  cover!: string;
-  description!: string;
+
+// 创建 Article 时，id 与时间戳由 Sequelize 生成；其余业务字段允许缺省
+export type ArticleCreationAttributes = Optional<
+  ArticleAttributes,
+  "id" | "createdAt" | "updatedAt" | "cover" | "description" | "category_id" | "note_id" | "sort"
+>;
+
+class Article extends Model<ArticleAttributes, ArticleCreationAttributes> implements ArticleAttributes {
+  declare id: number;
+  declare title: string;
+  declare content: string;
+  declare cover: string | null;
+  declare description: string | null;
+  declare category_id: number | null;
+  declare note_id: number | null;
+  declare sort: number;
+  declare createdAt: Date;
+  declare updatedAt: Date;
 }
 Article.init(
   {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
     title: DataTypes.STRING,
     content: DataTypes.TEXT,
     cover: DataTypes.TEXT,
     description: DataTypes.TEXT,
+    // 外键在迁移里声明（ON DELETE RESTRICT）；模型只描述列本身
+    category_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    // 关联笔记（外键与 ON DELETE SET NULL 在迁移里声明）；模型只描述列本身
+    note_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    sort: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
+    // 显式声明时间戳列：Sequelize 仅在属性缺失时才自动注入，此处与迁移文件保持一致的 allowNull 约束
+    createdAt: {
+      type: DataTypes.DATE,
+      allowNull: false,
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      allowNull: false,
+    },
   },
   {
     sequelize,

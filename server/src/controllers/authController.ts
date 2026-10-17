@@ -1,16 +1,10 @@
 import type { Response, Request } from "express";
 import { sendErrorResponse, sendSuccessResponse } from "../utils/response.ts";
 import { HttpStatusCode } from "../utils/constants/HttpStatus.ts";
+import { signToken, verifyToken } from "../utils/token.ts";
+import type { AuthTokenPayload } from "../utils/token.ts";
 import User from "../models/users.ts";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import dotenv from "dotenv";
-
-dotenv.config();
-
-const JWT_SECRET = process.env.JWT_SECRET as string; // 确保你的 JWT_SECRET 已在环境变量中配置
-const JWT_EXPIRES_IN = "1h"; // Access Token 过期时间
-const REFRESH_TOKEN_EXPIRES_IN = "7d"; // Refresh Token 过期时间
 
 /**
  * 用户注册处理函数
@@ -66,19 +60,48 @@ export const login = async (req: Request, res: Response) => {
       return sendErrorResponse(res, HttpStatusCode.BAD_REQUEST, "无效的用户名或密码");
     }
 
-    // 生成 JWT
-    const token = jwt.sign({ id: user.id, role_id: user.role_id }, JWT_SECRET, {
-      expiresIn: JWT_EXPIRES_IN,
-    });
-
-    // 生成 Refresh Token
-    const refreshToken = jwt.sign({ id: user.id, role_id: user.role_id }, JWT_SECRET, {
-      expiresIn: REFRESH_TOKEN_EXPIRES_IN,
-    });
+    // 生成 JWT 与 Refresh Token
+    const token = signToken(user, "access");
+    const refreshToken = signToken(user, "refresh");
 
     return sendSuccessResponse(res, HttpStatusCode.OK, { token, refreshToken }, "登录成功");
   } catch (error) {
     console.error("登录错误:", error);
+    return sendErrorResponse(res, HttpStatusCode.INTERNAL_SERVER_ERROR, "服务器内部错误");
+  }
+};
+
+/**
+ * 刷新访问令牌
+ *
+ * 只签发新的 accessToken，**不轮换 refreshToken**：服务端无状态存储，
+ * 无法吊销已签发的令牌，轮换只会制造「旧令牌依然有效」的假象。
+ * 需要真正可吊销时，应引入服务端令牌表（记录已签发的 refreshToken 并支持作废）。
+ */
+export const refreshToken = async (req: Request, res: Response) => {
+  try {
+    const { refreshToken: token } = req.body;
+    if (!token || typeof token !== "string") {
+      return sendErrorResponse(res, HttpStatusCode.BAD_REQUEST, "缺少 refreshToken");
+    }
+
+    let decoded: AuthTokenPayload;
+    try {
+      // 要求用途必须是 refresh，访问令牌不可用于换取新令牌
+      decoded = verifyToken(token, "refresh");
+    } catch {
+      return sendErrorResponse(res, HttpStatusCode.UNAUTHORIZED, "refreshToken 无效或已过期");
+    }
+
+    // 重新读取用户：避免用户被删除或角色变更后，仍沿用旧令牌里的角色
+    const user = await User.findByPk(decoded.id);
+    if (!user) {
+      return sendErrorResponse(res, HttpStatusCode.UNAUTHORIZED, "用户不存在");
+    }
+
+    return sendSuccessResponse(res, HttpStatusCode.OK, { token: signToken(user, "access") }, "令牌刷新成功");
+  } catch (error) {
+    console.error("刷新令牌错误:", error);
     return sendErrorResponse(res, HttpStatusCode.INTERNAL_SERVER_ERROR, "服务器内部错误");
   }
 };

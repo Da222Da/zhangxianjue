@@ -1,7 +1,7 @@
 <!-- src/components/Layout/index.vue -->
 <template>
   <div class="layout">
-    <!-- <Header /> -->
+    <Header />
     <div class="page-container">
       <Sidebar />
       <main class="main-content">

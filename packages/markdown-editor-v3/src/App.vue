@@ -7,20 +7,15 @@
 <script lang="ts" setup>
 import { ref, onMounted, onBeforeUnmount, nextTick, watch } from "vue";
 import { useOptions } from "./hooks/index.js";
+import type { MarkdownEditorProps } from "./types.js";
 
 // 定义组件配置
 defineOptions({ name: "Markdown" });
 
 // Props
-const props = defineProps({
-  mode: {
-    type: String,
-    default: "previewOnly", // 可选值：previewOnly、edit&preview、editOnly
-  },
-  modelValue: {
-    type: String,
-    default: "",
-  },
+const props = withDefaults(defineProps<MarkdownEditorProps>(), {
+  mode: "previewOnly", // 可选值：previewOnly、edit&preview、editOnly
+  modelValue: "",
 });
 
 // emits
