@@ -115,6 +115,22 @@ npm run dev:client       # 仓库根目录
 > ⚠️ 历史搜索已按需求移除，`composables/useSearchHistory.ts` 一并删除。
 > 若以后要加回来，注意它属于 composable 层，不要直接写进视图。
 
+### 文章详情页：悬浮目录
+
+文章正文用 `<Markdown ... mode="previewOnly" toc-mode="auto" />` 渲染：**即使内容里没有
+`[TOC]`，也会根据 H1–H6 自动生成目录**。
+
+- 正文列最大 `820px` 并水平居中。
+- 目录固定在预览区左侧（`left: 0`，相对预览区而非浏览器视口）、垂直居中
+  （`top: 50%`），是半透明磨砂浮层，覆盖在正文之上但不挤占正文；页面滚动时保持不动。
+- 分栏编辑时目录相对预览面板定位，不会跑到左侧源码编辑区。
+- 点 `«` 收起后变成左侧垂直居中的小列表按钮，再点展开。
+- 点击目录项平滑滚动到对应标题，滚动时自动高亮当前标题。
+- 标题锚点由渲染器统一生成（`md-heading-*` 前缀），不会和页面已有 id 冲突。
+- 内容里已经写了 `[TOC]` 时按标记位置渲染，`auto` 不会再插一份。
+- 需要关闭自动目录时改用 `toc-mode="marker"`；目录样式由
+  [`@zhangxianjue/markdown`](../../packages/markdown/) 提供，client 只覆盖手绘外框。
+
 ### 笔记详情页：节点内链接
 
 思维导图的节点支持 Markdown 链接，点击即可跳转：
@@ -220,7 +236,7 @@ src
 ## 两个体积相关的约定
 
 - **重型可视化组件一律局部引入，不在 `main.ts` 全局注册**。markmap（含 d3 / rough.js）与
-  markdown 编辑器（含 cherry-markdown，约 3MB）都是如此，否则会被打进入口包
+  markdown 编辑器（含 markdown-it / katex / dompurify）都是如此，否则会被打进入口包
   —— 入口包曾因此达到 6.3 MB，改为懒加载后降到约 1.0 MB。
 - 图片地址（文章封面）以相对路径存储，展示前必须经 `services/apiConfig.ts` 的
   `resolveAssetUrl()` 拼接接口 origin。

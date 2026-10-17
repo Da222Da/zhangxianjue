@@ -10,10 +10,11 @@
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
-    "@zhangxianjue/markdown-editor-v3": "^1.0.0",
+    "@zhangxianjue/markdown": "*",
     "@zhangxianjue/markmap": "*",
     "axios": "^1.19.0",
     "element-plus": "^2.14.3",
+    "katex": "^0.18.7",
     "normalize.css": "^8.0.1",
     "pinia": "^4.1.0",
     "pinia-plugin-persistedstate": "^4.7.1",

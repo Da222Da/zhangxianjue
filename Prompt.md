@@ -6,12 +6,12 @@
 
 ## 子项目与技术栈（锁定，不得替换）
 
-| 子项目        | 定位       | 技术栈                                                                                          |
-| :------------ | :--------- | :---------------------------------------------------------------------------------------------- |
-| `apps/admin`  | 后台管理端 | Vue 3 + TypeScript + Vite + Element Plus + vue-router + axios                                   |
-| `apps/client` | 前台展示端 | Vue 3 + TypeScript + Vite + Element Plus + vue-router + markmap                      |
-| `server`      | 后端服务   | Node.js + Express 5 + TypeScript + mysql2 + Sequelize 6                                         |
-| `packages/*`  | 内部组件库 | `@zhangxianjue/markdown-editor-v3`、`@zhangxianjue/markmap` |
+| 子项目        | 定位       | 技术栈                                                          |
+| :------------ | :--------- | :-------------------------------------------------------------- |
+| `apps/admin`  | 后台管理端 | Vue 3 + TypeScript + Vite + Element Plus + vue-router + axios   |
+| `apps/client` | 前台展示端 | Vue 3 + TypeScript + Vite + Element Plus + vue-router + markdown + markmap |
+| `server`      | 后端服务   | Node.js + Express 5 + TypeScript + mysql2 + Sequelize 6         |
+| `packages/*`  | 内部组件库 | `@zhangxianjue/markdown`、`@zhangxianjue/markmap`               |
 
 - 认证：bcryptjs、jsonwebtoken
 - 工程化：dotenv、cors
@@ -98,7 +98,80 @@ rough.js 手绘渲染、Markdown AST 解析（`markdown-it`）。
 
 # 需求说明
 
-1. 将 markmap 改为 markmap, 包名改为"@zhangxianjue/markmap",以及项目中的所有依赖全部替换
+1. 新增 packages/markdowm 自定义 markdown 编辑渲染器，替代项目中的 @zhangxianjue/markdown-editor-v3
+2. 参考 cherry-markdown：https://github.com/Tencent/cherry-markdown，但用不上那么多功能，仅实现以下功能即可
+   - 模式
+     - 纯编辑模式
+     - 纯渲染模式
+     - 编辑 + 渲染模式
+   - 工具栏
+     - 字体样式类
+       - bold: 加粗
+       - italic: 斜体
+       - underline: 下划线
+       - strikethrough: 删除线
+       - sub: 下标
+       - sup: 上标
+       - ruby: 实现类似给文字加拼音的效果（当然如何把文字转成拼音需要业务方自行实现，也可参考在线demo用的文字转拼音组件）
+       - size: 文字尺寸，自带二级菜单，二级菜单里可选 小、中、大、特大
+       - color: 文字颜色，自带二级菜单，二级菜单里可选 文字颜色、文字背景色
+     - 段落属性类
+       - quote: 引用
+       - detail: 手风琴，即可以展开收起内容
+       - h1: 一级标题
+       - h2: 二级标题
+       - h3: 三级标题
+       - header: 标题菜单，自带二级菜单，二级菜单里可以选 1~5级标题
+       - ul: 无序列表
+       - ol: 有序列表
+       - checklist: 任务清单
+       - list: 列表菜单，自带二级菜单，二级菜单里可选 有序列表、无序列表、任务清单
+       - justify: 对齐方式，自带二级菜单，二级菜单里可以选 左对齐、居中、右对齐
+       - panel: 信息面板，自带二级菜单，二级菜单里可以选 tips、info、warning、danger、success
+     - 插入类
+       - image: 插入图片
+       - link: 插入链接（识别 B 站视频链接为播放器）
+       - hr: 插入水平分割线
+       - br: 插入新行
+       - code: 代码块
+       - toc: 插入目录（![目录渲染参考图](image.png)）
+     - 功能类
+     - undo: 回撤操作
+     - redo: 恢复最近回撤的操作
+     - redo: 恢复最近回撤的操作
+   - markdown 语法
+     - emoji 表情
+     - image 图片
+     - link 超链接
+     - autoLink 自动超链接（自动将符合超链接格式的字符串转换成标签）
+     - fontEmphasis 加粗和斜体
+     - bgColor 字体背景色
+     - fontColor 字体颜色
+     - fontSize 字体大小
+     - sub 下标
+     - sup 上标
+     - ruby 一种表明上下排列的排版方式，典型应用就是文字上面加拼音
+     - strikethrough 删除线
+     - underline 下划线
+     - highLight 高亮（就是在文字外层包一个标签）
+     - codeBlock 代码块
+     - inlineCode 行内代码（因要实现排它特性，所以归类为段落语法）
+     - mathBlock 块级公式
+     - inlineMath 行内公式（理由同行内代码）
+     - htmlBlock html标签，主要作用为过滤白名单外的html标签
+     - footnote 脚注
+     - commentReference 超链接引用
+     - br 换行
+     - table 表格
+     - blockquote 引用
+     - toc 目录
+     - header 标题
+     - hr 分割线
+     - list 有序列表、无序列表、checklist
+     - detail 手风琴
+     - panel 信息面板
+     - normalParagraph 普通段落
+3. 渲染风格也是手绘风格
 
 # 输出风格
 

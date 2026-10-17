@@ -14,7 +14,9 @@
     "dev:client": "npm run dev -w client",
     "dev:admin": "npm run dev -w admin",
     "dev:server": "npm run dev -w server",
-    "build:markdown": "npm run build -w markdown-editor-v3",
+    "dev:markdown": "npm run dev -w @zhangxianjue/markdown",
+    "build:markdown": "npm run build -w @zhangxianjue/markdown",
+    "test:markdown": "npm run test -w @zhangxianjue/markdown",
     "dev:markmap": "npm run dev -w @zhangxianjue/markmap",
     "build:markmap": "npm run build -w @zhangxianjue/markmap",
     "test:markmap": "npm run test -w @zhangxianjue/markmap"

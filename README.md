@@ -9,7 +9,7 @@
 | [`server`](./server/)           | 后端服务                 | Node.js + Express 5 + TypeScript + Sequelize 6 + MySQL      | 认证、时间轴 / 文章 / 笔记 CRUD、分类、图片上传、Swagger 文档 |
 | [`apps/admin`](./apps/admin/)   | 后台管理端               | Vue 3 + TS + Vite + Element Plus + Pinia                    | 登录后维护时间轴、文章、笔记与树形分类 |
 | [`apps/client`](./apps/client/) | 前台展示端               | Vue 3 + TS + Vite + Element Plus                            | 时间轴首页、攻略笔记卡片墙（思维导图）与文章阅读 |
-| [`packages/`](./packages/)      | 内部组件库               | —                                                           | markdown-editor-v3、markmap          |
+| [`packages/`](./packages/)      | 内部组件库               | —                                                           | markdown、markmap          |
 
 ## 快速开始
 
@@ -61,7 +61,8 @@ Ctrl+C 会一起停掉三个。只想跑其中一两个，仍可用上面的 `de
 | `npm run dev`                                           | 并行启动后端 + 两个前端     |
 | `npm run dev:server` / `dev:admin` / `dev:client`       | 分别启动各子项目            |
 | `npm run build -w admin` / `-w client`                  | 构建前端                    |
-| `npm run build:markdown` / `build:markmap`              | 构建内部组件库              |
+| `npm run dev:markdown` / `build:markdown` / `test:markdown` | markdown 组件库的开发 / 构建 / 测试 |
+| `npm run dev:markmap` / `build:markmap` / `test:markmap`    | markmap 组件库的开发 / 构建 / 测试  |
 
 > ⚠️ 改动 `packages/*` 的源码后**必须重新构建该包**：消费方读的是 `dist/`，而 `dist/` 被 gitignore、未入库。
 

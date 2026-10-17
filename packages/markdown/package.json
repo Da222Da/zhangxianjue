@@ -1,0 +1,64 @@
+{
+  "name": "@zhangxianjue/markdown",
+  "version": "0.1.0",
+  "description": "自研 Markdown 编辑渲染器：源码编辑 + 实时预览，支持 Cherry 风格扩展语法",
+  "type": "module",
+  "main": "./dist/markdown.cjs",
+  "module": "./dist/markdown.es.js",
+  "types": "./types/index.d.ts",
+  "files": [
+    "dist",
+    "types",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "import": "./dist/markdown.es.js",
+      "require": "./dist/markdown.cjs"
+    },
+    "./style.css": "./dist/style.css",
+    "./package.json": "./package.json"
+  },
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "scripts": {
+    "dev": "vite --config playground/vite.config.ts",
+    "build": "vite build",
+    "typecheck": "vue-tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run test && npm run build"
+  },
+  "peerDependencies": {
+    "vue": "^3.3.0"
+  },
+  "dependencies": {
+    "dompurify": "^3.4.15",
+    "katex": "^0.18.7",
+    "markdown-it": "^15.0.3",
+    "markdown-it-emoji": "^3.0.0",
+    "markdown-it-footnote": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@vitejs/plugin-vue": "^6.0.10",
+    "jsdom": "^19.0.0",
+    "typescript": "~6.0.3",
+    "vite": "^8.3.4",
+    "vite-plugin-dts": "^5.1.2",
+    "vitest": "^5.0.4",
+    "vue": "^3.5.44",
+    "vue-tsc": "^3.3.13"
+  },
+  "keywords": [
+    "vue3",
+    "markdown",
+    "editor",
+    "renderer",
+    "katex"
+  ],
+  "author": "",
+  "license": "ISC"
+}

@@ -70,7 +70,7 @@ src
 1. **元数据与正文分成两个弹窗**
    - 工具栏「新增 / 更新」→ `ArticleMetaDialog` / `NoteMetaDialog`，只管元数据
      （文章：标题 / 描述 / 分类 / 关联笔记 / 排序 / 封面；笔记：标题 / 描述 / 分类 / 排序 / 封面）
-   - 操作列「编辑内容」→ `ArticleContentDialog`（`@zhangxianjue/markdown-editor-v3`）/
+   - 操作列「编辑内容」→ `ArticleContentDialog`（`@zhangxianjue/markdown`）/
      `NoteContentDialog`（`@zhangxianjue/markmap` 的 `MarkmapEditor`）
    - 服务端对应 `PUT /admin/{article,note}/:id` 与 `PUT /admin/{article,note}/:id/content`，两端互不覆盖。
 
@@ -81,7 +81,7 @@ src
 3. **操作列固定在最左侧**，工具栏按钮顺序统一为「新增 → 更新」。
 
 > ✅ **决策：新增时不再编辑正文**。正文只在内容弹窗里维护，两个入口各管一半字段，
-> 避免新增弹窗被迫加载 3 MB 的 markdown 编辑器，也避免「元数据保存」把正文覆盖成空。
+> 避免新增弹窗被迫加载 markdown 编辑器（markdown-it / katex），也避免「元数据保存」把正文覆盖成空。
 
 > ⚠️ **笔记**列表接口**不返回 `content`**（思维导图动辄数 KB）。因此列表项的类型是 `NoteListItem` 而非 `Note` ——
 > 类型系统会直接拦住「在列表里读 `row.content`」。内容弹窗每次打开都单独调 `GET /admin/note/:id` 取最新正文。

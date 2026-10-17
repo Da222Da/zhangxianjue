@@ -12,5 +12,5 @@ declare module "*.vue" {
   export default component;
 }
 
-// @zhangxianjue/markdown-editor-v3 与 @zhangxianjue/markmap 的类型
+// @zhangxianjue/markdown 与 @zhangxianjue/markmap 的类型
 // 均由各自包内的 types/index.d.ts 提供，无需在此声明

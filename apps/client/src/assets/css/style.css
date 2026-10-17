@@ -251,15 +251,18 @@ p {
 }
 
 /*
- * 文章详情的 markdown 纸张与悬浮目录由 cherry-markdown 自带样式绘制（圆角卡片）。
- * 这里只覆盖外框，让它们和手绘纸片同一套；⚠️ 类名来自第三方包，
- * 且其 CSS 随路由懒加载晚于本文件注入，必须带 !important 才能生效。
+ * 文章详情的 markdown 由 @zhangxianjue/markdown 渲染。
+ * 预览容器本身不带框（previewOnly 直接融进页面），这里只把目录框换成手绘纸片，
+ * 与全站墨线 + 错位投影保持一致。
  */
-.cherry-previewer,
-.cherry-flex-toc {
+.md-preview .md-toc,
+.md-preview .md-toc__collapsed {
   border: var(--sketch-line) solid var(--ink) !important;
+  border-left: 3px solid var(--orange) !important;
   border-radius: var(--sketch-radius-sm) !important;
-  box-shadow: 4px 4px 0 var(--sketch-shadow) !important;
+  box-shadow: 3px 3px 0 var(--sketch-shadow) !important;
+  background: color-mix(in srgb, var(--surface) 82%, transparent) !important;
+  backdrop-filter: blur(10px);
 }
 
 /* ===== 工具类 ===== */

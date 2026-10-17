@@ -11,8 +11,8 @@
       </template>
     </el-alert>
 
-    <!-- 局部引入而非全局注册：编辑器内含 cherry-markdown（约 3MB），
-         放在这里可随本弹窗懒加载 -->
+    <!-- 局部引入而非全局注册：编辑器含 markdown-it / katex，
+         放在这里可随弹窗懒加载 -->
     <div v-else class="editor-wrapper">
       <Markdown v-model="content" mode="edit&preview" :file-upload="uploadFile" placeholder="用 Markdown 撰写文章正文" />
     </div>
@@ -30,8 +30,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
-import { Markdown } from "@zhangxianjue/markdown-editor-v3";
-import "@zhangxianjue/markdown-editor-v3/dist/style.css";
+import { Markdown } from "@zhangxianjue/markdown";
+import "@zhangxianjue/markdown/style.css";
+// 公式字体与排版由宿主引入：库模式不允许把 KaTeX 的 @font-face 外置成独立文件
+import "katex/dist/katex.min.css";
 import articleService from "@/api/articleService";
 import type { ArticleContentPayload } from "@/types/api";
 

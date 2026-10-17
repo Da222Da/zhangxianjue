@@ -20,7 +20,7 @@ const app = createApp(App);
 // 插件
 // ⚠️ 重型可视化组件都不在此全局注册，改为在各自使用的页面局部引入：
 //   - @zhangxianjue/markmap  仅笔记详情页使用
-//   - @zhangxianjue/markdown-editor-v3（内含 cherry-markdown 约 3MB）仅文章详情页使用
+//   - @zhangxianjue/markdown（含 markdown-it / katex）仅文章详情页使用
 // 全局注册会把它们全部打进入口包（曾使入口包达 6.3MB）。
 app.use(router);
 app.use(ElementPlus);

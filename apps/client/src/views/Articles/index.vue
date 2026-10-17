@@ -41,7 +41,7 @@
         因此这里刻意不给固定高度，让内容自然撑开。
       -->
       <div class="markdown-body">
-        <Markdown :model-value="article.content" mode="previewOnly" />
+        <Markdown :model-value="article.content" mode="previewOnly" toc-mode="auto" />
       </div>
     </template>
   </div>
@@ -50,10 +50,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-// 局部引入而非全局注册：编辑器内含 cherry-markdown（约 3MB），
+// 局部引入而非全局注册：markdown 渲染器（含 markdown-it / katex）
 // 放在这里可随本路由懒加载，不拖累首页与列表页
-import { Markdown } from "@zhangxianjue/markdown-editor-v3";
-import "@zhangxianjue/markdown-editor-v3/dist/style.css";
+import { Markdown } from "@zhangxianjue/markdown";
+import "@zhangxianjue/markdown/style.css";
+// 公式字体与排版由宿主引入：库模式不允许把 KaTeX 的 @font-face 外置成独立文件
+import "katex/dist/katex.min.css";
 import articleService from "@/api/articleService";
 import { resolveAssetUrl } from "@/services/apiConfig";
 import { formatDate } from "@/util/index.ts";
@@ -166,9 +168,20 @@ watch(
   line-height: 1;
 }
 
-/* 布局随页面滚动，不使用内部滚动容器 */
+/* 正文纸张：与全站手绘卡片同一套墨线 + 错位投影，布局随页面滚动 */
 .markdown-body {
   min-height: 200px;
+  padding: 24px 28px;
+  border: var(--sketch-line) solid var(--ink);
+  border-radius: var(--sketch-radius-sm);
+  background: var(--surface);
+  box-shadow: 4px 4px 0 var(--sketch-shadow);
+}
+
+@media (max-width: 640px) {
+  .markdown-body {
+    padding: 16px;
+  }
 }
 
 /* 封面套一层手绘相框：墨线描边 + 错位投影 */

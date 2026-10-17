@@ -10,9 +10,6 @@ import "./assets/styles/global.css";
 
 import router from "./router";
 
-import Markdown from "@zhangxianjue/markdown-editor-v3";
-import "@zhangxianjue/markdown-editor-v3/dist/style.css";
-
 const app = createApp(App);
 
 // Pinia 必须在 router 之前安装：路由守卫会在导航时读取登录态
@@ -22,7 +19,7 @@ pinia.use(piniaPluginPersistedstate);
 app.use(pinia);
 app.use(ElementPlus, { size: "default" });
 app.use(router);
-// 默认导出是插件，install 时把 Markdown 注册为全局组件（类型见 src/types/markdown-editor.d.ts）
-app.use(Markdown);
+// 重型可视化组件不在此全局注册：文章正文编辑器只在 ArticleContentDialog 里局部引入，
+// 避免把 markdown-it / katex 打进入口包。客户端的做法与此一致。
 
 app.mount("#app");
