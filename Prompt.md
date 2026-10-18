@@ -98,13 +98,10 @@ rough.js 手绘渲染、Markdown AST 解析（`markdown-it`）。
 
 # 需求说明
 
-1. 帮我写一个一键部署的脚本
-   - 我已经购买了一个服务器（公网：120.79.223.151）
-   - 已经解析了两个域名
-     1. 主域名 zhangxianjue.com，对应 client
-     2. 二级域名 admin.zhangxianjue.com，对应 admin
-   - 使用宝塔完整了，代码上传、软件安装（nodejs、mysql、pm2、Nginx）
-2. 剩下的不知道怎么办了
+1. 优化一键部署脚本，尽量少填配置
+   - client 域名：zhangxianjue.com
+   - admin 域名：admin.zhangxianjue.com
+   - 宝塔面板账号密码不要写入仓库；脚本在服务器本机运行，直接读取宝塔的 MySQL / Nginx 配置
 
 # 输出风格
 

@@ -254,6 +254,47 @@ mysql_app_ok() {
     -e "USE \`$DB_NAME\`" >/dev/null 2>&1
 }
 
+mysql_root_ok() {
+  local password="$1"
+  MYSQL_PWD="$password" "$MYSQL_BIN" -h localhost -uroot -e "SELECT 1" >/dev/null 2>&1 \
+    || MYSQL_PWD="$password" "$MYSQL_BIN" -h 127.0.0.1 -uroot -e "SELECT 1" >/dev/null 2>&1
+}
+
+# 尝试从宝塔本机文件读取 MySQL root 密码
+#
+# 不同宝塔版本存放位置不一致，这里按候选依次尝试；读到的值会再用
+# mysql root 登录验证，验证失败自动忽略，不会把错误值带到后续流程。
+bt_mysql_root_candidates() {
+  local file value
+  local files=(
+    /www/server/panel/data/default.pl
+    /www/server/panel/data/mysql_root.pass
+    /www/server/panel/data/mysql_root_pass.pl
+    /www/server/panel/data/mysql_root.pl
+  )
+  for file in "${files[@]}"; do
+    [[ -f "$file" ]] || continue
+    value="$(head -c 1024 "$file" 2>/dev/null | tr -d '\r\n' || true)"
+    [[ -n "$value" ]] && printf '%s\n' "$value"
+  done
+
+  local jsons=(
+    /www/server/panel/data/default.pl
+    /www/server/panel/config/mysql.json
+    /www/server/panel/config/config.json
+  )
+  for file in "${jsons[@]}"; do
+    [[ -f "$file" ]] || continue
+    "$NODE_BIN" -e '
+      try {
+        const j = require(process.argv[1]);
+        const v = j.mysql_root || j.root_password || j.mysql_root_password || j.password || "";
+        if (v) process.stdout.write(String(v) + "\n");
+      } catch {}
+    ' "$file" 2>/dev/null || true
+  done
+}
+
 ensure_database() {
   if mysql_app_ok; then
     log "数据库连接正常（$DB_NAME）"
@@ -261,6 +302,24 @@ ensure_database() {
   fi
 
   if [[ -n "${MYSQL_BIN:-}" && -x "$MYSQL_BIN" ]]; then
+    if [[ -n "${DB_ROOT_PASSWORD:-}" && ( "$DB_HOST" == "127.0.0.1" || "$DB_HOST" == "localhost" ) ]] && ! mysql_root_ok "$DB_ROOT_PASSWORD"; then
+      warn "配置的 DB_ROOT_PASSWORD 无法登录本机 MySQL root，尝试从宝塔配置读取"
+      DB_ROOT_PASSWORD=""
+    fi
+
+    # 先尝试从宝塔本机配置读取 root 密码；读到的值必须能登录成功才会采用
+    if [[ -z "${DB_ROOT_PASSWORD:-}" && ( "$DB_HOST" == "127.0.0.1" || "$DB_HOST" == "localhost" ) ]]; then
+      local candidate
+      while IFS= read -r candidate; do
+        [[ -n "$candidate" ]] || continue
+        if mysql_root_ok "$candidate"; then
+          DB_ROOT_PASSWORD="$candidate"
+          log "已从宝塔本机配置读取 MySQL root 密码"
+          break
+        fi
+      done < <(bt_mysql_root_candidates)
+    fi
+
     if [[ -z "${DB_ROOT_PASSWORD:-}" && -t 0 ]]; then
       read -rsp "MySQL root 密码（用于自动建库，直接回车则跳过）: " DB_ROOT_PASSWORD
       echo
@@ -270,8 +329,12 @@ ensure_database() {
       local user_host="127.0.0.1"
       local root_host_args=(-h "$DB_HOST" -P "$DB_PORT")
       if [[ "$DB_HOST" == "127.0.0.1" || "$DB_HOST" == "localhost" ]]; then
-        # 宝塔的 root@localhost 通常只允许 socket 登录
-        root_host_args=(-h localhost)
+        # 宝塔的 root@localhost 通常走 socket；若只允许 TCP 则退回 127.0.0.1
+        if MYSQL_PWD="$DB_ROOT_PASSWORD" "$MYSQL_BIN" -h localhost -uroot -e "SELECT 1" >/dev/null 2>&1; then
+          root_host_args=(-h localhost)
+        else
+          root_host_args=(-h 127.0.0.1 -P "$DB_PORT")
+        fi
       else
         user_host="%"
       fi
@@ -348,12 +411,28 @@ run_migrations() {
     db:migrate)
 }
 
+admin_exists() {
+  [[ -n "${MYSQL_BIN:-}" && -x "$MYSQL_BIN" ]] || return 1
+  local count
+  count="$(MYSQL_PWD="$DB_PASSWORD" "$MYSQL_BIN" -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -N -B \
+    -e "SELECT COUNT(*) FROM Users u JOIN Roles r ON u.role_id = r.id WHERE r.code = 'admin'" 2>/dev/null || echo 0)"
+  [[ "$count" != "0" ]]
+}
+
 ensure_admin() {
-  [[ -n "${ADMIN_PASSWORD:-}" ]] || {
-    warn "未配置 ADMIN_PASSWORD，跳过自动创建管理员"
+  if admin_exists; then
+    log "管理员账号已存在，跳过创建"
     return 0
-  }
-  [[ -n "${ADMIN_USERNAME:-}" ]] || die "配置了 ADMIN_PASSWORD 时必须同时配置 ADMIN_USERNAME"
+  fi
+
+  ADMIN_USERNAME="${ADMIN_USERNAME:-admin}"
+  if [[ -z "${ADMIN_PASSWORD:-}" ]]; then
+    ADMIN_PASSWORD="$(gen_password)"
+    save_var ADMIN_USERNAME "$ADMIN_USERNAME"
+    save_var ADMIN_PASSWORD "$ADMIN_PASSWORD"
+    log "未发现管理员，已自动创建账号「$ADMIN_USERNAME」并把密码写入 $CONFIG_FILE"
+  fi
+  [[ -n "$ADMIN_USERNAME" ]] || die "ADMIN_USERNAME 不能为空"
 
   log "检查 / 创建管理员账号..."
   (
@@ -560,6 +639,8 @@ API：    http://$CLIENT_DOMAIN/api/library/book
 4. 查看日志：$PM2_BIN logs $PM2_NAME
 5. 修改管理员密码，并确认 server/.env 的 DEV_LOGIN_ENABLED=false
 
+管理员：首次部署时若未配置 ADMIN_PASSWORD，脚本会自动生成 admin 账号，
+        密码见 $CONFIG_FILE 的 ADMIN_PASSWORD 字段
 上传目录：$UPLOAD_DIR
 数据库：  $DB_NAME @ $DB_HOST:$DB_PORT
 ============================================================

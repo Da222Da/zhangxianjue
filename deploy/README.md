@@ -9,6 +9,9 @@
 
 脚本：[`deploy.sh`](./deploy.sh)。它负责构建、写环境变量、建库（可选）、迁移、创建管理员（可选）、启动 PM2、写 Nginx 配置并重载。
 
+> 🔐 **不需要宝塔面板账号密码**：脚本在服务器本机运行，直接读取宝塔的 MySQL 配置、Nginx 配置目录并调用 PM2。
+> 不要把面板密码写进仓库或 `Prompt.md`；如果已经写过，请尽快在宝塔「面板设置」里修改密码并开启二次验证。
+
 ## 1. 宝塔面板准备
 
 ### 1.1 软件版本
@@ -66,7 +69,12 @@ git clone <你的仓库地址> zhangxianjue
 └── package-lock.json
 ```
 
-## 3. 填写部署配置
+## 3. 填写部署配置（可选）
+
+如果域名就是 `zhangxianjue.com` / `admin.zhangxianjue.com`，可以跳过编辑直接运行第 5 步；
+脚本会自动生成 `deploy.env`、数据库密码、JWT 与管理员。
+
+需要自定义时再：
 
 ```bash
 cd /www/wwwroot/zhangxianjue
@@ -75,7 +83,7 @@ chmod 600 deploy/deploy.env
 vi deploy/deploy.env
 ```
 
-至少确认：
+默认值已经对应当前服务器，可以直接留空：
 
 ```ini
 CLIENT_DOMAIN=zhangxianjue.com
@@ -83,20 +91,22 @@ ADMIN_DOMAIN=admin.zhangxianjue.com
 
 DB_NAME=zhangxianjue_database
 DB_USER=zhangxianjue
-DB_ROOT_PASSWORD='宝塔 MySQL root 密码'
-
-# 全新数据库时建议填写，脚本会自动创建管理员
-ADMIN_USERNAME=你的管理员用户名
-ADMIN_PHONE=你的手机号
-ADMIN_PASSWORD='你的管理员密码'
+DB_ROOT_PASSWORD=
+ADMIN_USERNAME=
+ADMIN_PASSWORD=
 ```
+
+脚本会自动处理：
+
+- `DB_PASSWORD`、`JWT_SECRET`：生成并写回 `deploy.env`
+- `DB_ROOT_PASSWORD`：留空时尝试从宝塔本机配置读取并验证；读不到且是交互终端会提示输入
+- `ADMIN_USERNAME` / `ADMIN_PASSWORD`：留空时自动创建 `admin` 账号并生成随机密码，写回 `deploy.env`
+- 已有数据库 / 已有管理员：自动跳过，不会覆盖原管理员密码
 
 说明：
 
-- `DB_PASSWORD`、`JWT_SECRET` 留空会自动生成并写回 `deploy.env`
-- `DB_ROOT_PASSWORD` 只用于首次建库，不会写入 `server/.env`
-- 已有数据库 / 已有管理员时，`DB_ROOT_PASSWORD` 与管理员的三个字段都可以留空
 - `deploy.env` 已被 `.gitignore` 忽略
+- **不需要填写宝塔面板账号密码**：脚本直接在本机运行，通过宝塔的 Nginx / MySQL / PM2 与 Nginx 配置目录工作
 - `server/.env` 每次部署都会由脚本重新生成；要改端口 / 上传目录 / 数据库等，请改 `deploy/deploy.env`
 - `UPLOAD_DIR` 留空时默认是 `<仓库>/server/uploads`。如果用宝塔「上传」覆盖整个代码目录，先把该目录备份；也可以把 `UPLOAD_DIR` 指到代码目录之外，例如 `/www/wwwroot/zhangxianjue-data/uploads`
 
@@ -140,7 +150,7 @@ sudo bash deploy/deploy.sh
 6. 创建数据库与账号（填了 `DB_ROOT_PASSWORD` 时）
 7. 导入 `IMPORT_SQL` / `IMPORT_UPLOADS`（可选）
 8. 执行 `sequelize db:migrate`
-9. 创建或升级管理员（填了 `ADMIN_PASSWORD` 时）
+9. 创建或升级管理员（未配置时自动生成 `admin` + 随机密码；已有管理员则跳过）
 10. 启动 / 重载 PM2
 11. 写两个域名的 Nginx 配置并重载
 12. 健康检查
@@ -151,6 +161,8 @@ sudo bash deploy/deploy.sh
 client： http://zhangxianjue.com
 admin：  http://admin.zhangxianjue.com
 ```
+
+首次部署且未配置 `ADMIN_PASSWORD` 时，脚本会生成管理员密码并写到 `deploy/deploy.env` 的 `ADMIN_PASSWORD`，登录后请立刻修改。
 
 ## 6. 申请 HTTPS
 
@@ -219,9 +231,16 @@ pm2 logs zhangxianjue-api --lines 100
 - 数据库是否可连
 - `server/src/config/config.json` 的 `production` 段不再需要手填密码，`DB_*` 会覆盖
 
-### 数据库连接失败
+### 数据库连接失败 / 没有自动读到 MySQL root 密码
 
-在宝塔「数据库」页确认数据库与用户已创建，或填写 `DB_ROOT_PASSWORD` 后重跑脚本。
+脚本会尝试从宝塔本机配置读取 root 密码；不同宝塔版本存放位置不同，读不到时会在交互终端提示输入。
+也可以直接填写：
+
+```ini
+DB_ROOT_PASSWORD='宝塔 MySQL root 密码'
+```
+
+或在宝塔「数据库」页手动创建数据库与用户后重跑。
 
 手动 SQL：
 
