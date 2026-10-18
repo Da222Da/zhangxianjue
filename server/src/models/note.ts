@@ -12,6 +12,14 @@ export interface NoteAttributes {
   description: string | null;
   /** 分类 id（关联 Categories 表）；null 表示未分类 */
   category_id: number | null;
+  /**
+   * 是否限免
+   *
+   * true → 游客与普通用户也可阅读；false → 仅具备 library:view 的 VIP（会员 / 朋友 / 管理员）可阅读
+   */
+  is_free: boolean;
+  /** 是否对未登录游客可见；false 时游客在列表与详情中都看不到 */
+  guest_visible: boolean;
   /** 排序号，升序；0 表示未排版 */
   sort: number;
   createdAt: Date;
@@ -22,7 +30,7 @@ export interface NoteAttributes {
 // ⚠️ content 不在 Optional 列表中：它在库中为 NOT NULL，由 service 统一兜底为空串
 export type NoteCreationAttributes = Optional<
   NoteAttributes,
-  "id" | "createdAt" | "updatedAt" | "cover" | "description" | "category_id" | "sort"
+  "id" | "createdAt" | "updatedAt" | "cover" | "description" | "category_id" | "is_free" | "guest_visible" | "sort"
 >;
 
 class Note extends Model<NoteAttributes, NoteCreationAttributes> implements NoteAttributes {
@@ -32,6 +40,8 @@ class Note extends Model<NoteAttributes, NoteCreationAttributes> implements Note
   declare cover: string | null;
   declare description: string | null;
   declare category_id: number | null;
+  declare is_free: boolean;
+  declare guest_visible: boolean;
   declare sort: number;
   declare createdAt: Date;
   declare updatedAt: Date;
@@ -57,6 +67,16 @@ Note.init(
     category_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
+    },
+    is_free: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    guest_visible: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
     },
     sort: {
       type: DataTypes.INTEGER,

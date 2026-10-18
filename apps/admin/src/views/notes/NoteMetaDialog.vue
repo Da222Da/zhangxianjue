@@ -24,6 +24,16 @@
         />
       </el-form-item>
 
+      <el-form-item label="访问">
+        <el-switch v-model="isFree" active-text="限免" inactive-text="VIP 专属" />
+        <span class="form-hint">限免：游客与普通用户也可阅读；关闭：仅会员 / 朋友 / 管理员可读</span>
+      </el-form-item>
+
+      <el-form-item label="游客可见">
+        <el-switch v-model="guestVisible" active-text="可见" inactive-text="隐藏" />
+        <span class="form-hint">关闭后未登录游客在列表与详情中都看不到；登录用户不受影响</span>
+      </el-form-item>
+
       <el-form-item label="排序">
         <el-input-number v-model="sort" :min="0" :step="1" controls-position="right" />
         <span class="form-hint">数字越小越靠前，0 表示未排版</span>
@@ -121,6 +131,21 @@ const categoryId = computed({
   },
 });
 
+const isFree = computed({
+  get: () => props.note.is_free,
+  set: (val: boolean) => {
+    props.note.is_free = val;
+  },
+});
+
+/** 游客可见：关闭后未登录游客在列表与详情中都看不到 */
+const guestVisible = computed({
+  get: () => props.note.guest_visible,
+  set: (val: boolean) => {
+    props.note.guest_visible = val;
+  },
+});
+
 const sort = computed({
   get: () => props.note.sort ?? 0,
   set: (val: number | null) => {
@@ -166,6 +191,8 @@ const handleSubmit = async (): Promise<void> => {
       description: description.value.trim() ? description.value.trim() : null,
       cover: await cover.resolveForSubmit(),
       category_id: categoryId.value,
+      is_free: isFree.value,
+      guest_visible: guestVisible.value,
       sort: sort.value,
     };
 
@@ -245,5 +272,19 @@ watch(
   background: var(--el-fill-color-light);
   color: var(--el-text-color-secondary);
   font-size: 12px;
+}
+
+@media (max-width: 600px) {
+  .category-select {
+    width: 100%;
+  }
+
+  .cover-field {
+    flex-wrap: wrap;
+  }
+
+  .form-hint {
+    width: 100%;
+  }
 }
 </style>

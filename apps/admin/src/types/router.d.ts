@@ -1,5 +1,6 @@
 // src/types/router.d.ts
 import "vue-router";
+import type { PermissionCode } from "@/constants/permissions";
 
 declare module "vue-router" {
   interface RouteMeta {
@@ -12,5 +13,12 @@ declare module "vue-router" {
     public?: boolean;
     /** 页面标题，供侧边栏或文档引用 */
     title?: string;
+    /**
+     * 访问该页面所需的权限编码
+     *
+     * 由路由守卫校验；侧边栏也据此隐藏菜单项。
+     * 未声明表示只要求登录，不额外校验权限。
+     */
+    permission?: PermissionCode;
   }
 }

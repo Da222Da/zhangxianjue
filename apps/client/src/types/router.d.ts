@@ -1,6 +1,7 @@
 // src/types/router.d.ts
 import "vue-router";
 import type { RouteLocationNormalizedLoaded } from "vue-router";
+import type { PermissionCode } from "@/constants/permissions";
 
 /**
  * 面包屑分区：渲染为 `EN / 中文` 的形式，例如 `NOTES / 攻略笔记`
@@ -34,5 +35,9 @@ declare module "vue-router" {
     title?: string | ((route: RouteLocationNormalizedLoaded) => string | undefined);
     /** 面包屑分区，格式为 `EN / 中文` */
     section?: RouteSection;
+    /** 是否要求登录；未登录会被路由守卫送到登录页并带上 redirect */
+    requiresAuth?: boolean;
+    /** 访问该页面所需权限；登录但权限不足时会被送到个人中心的升级入口 */
+    permission?: PermissionCode;
   }
 }

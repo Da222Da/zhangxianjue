@@ -1,41 +1,14 @@
 // src/services/http.ts
-import axios from "axios";
-import type { AxiosError, AxiosInstance } from "axios";
-import { API_BASE_URL } from "./apiConfig";
-import { ApiError, isApiErrorBody } from "./apiError";
+import axiosInstance from "./axiosInstance";
+import { ApiError } from "./apiError";
 import type { ApiResponse } from "@/types/api";
 
 /**
- * 请求实例
+ * 请求封装
  *
- * client 只做公开读取，无鉴权需求，因此不配置令牌注入；
- * 若将来出现需要登录的接口，参照 apps/admin 的 axiosInstance 补请求拦截器。
+ * 令牌注入、401 静默刷新与错误形态统一在 axiosInstance 里处理；
+ * 本层只负责「解包 / 兜底判定」，调用方拿到的永远是 ApiResponse。
  */
-const axiosInstance: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 10000,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-// 响应拦截器：把服务端文案透出，供调用方直接取 error.message 展示
-axiosInstance.interceptors.response.use(
-  (response) => response,
-  (error: AxiosError<unknown>) => {
-    const status = error.response?.status ?? 0;
-    const body = error.response?.data;
-
-    if (isApiErrorBody(body)) {
-      return Promise.reject(new ApiError(body.message, body.statusCode, body.errorCode));
-    }
-    if (error instanceof Error) {
-      return Promise.reject(error);
-    }
-    return Promise.reject(new ApiError("请求失败，请稍后重试", status));
-  },
-);
-
 export const http = {
   /**
    * 发起 GET 请求
@@ -46,6 +19,36 @@ export const http = {
     const body = response.data;
 
     // 兜底：HTTP 200 但业务标记为失败的情况不应被静默忽略
+    if (!body.status) {
+      throw new ApiError(body.message || "请求失败", response.status);
+    }
+
+    return body;
+  },
+
+  /**
+   * 发起 POST 请求
+   * @throws {ApiError} 服务端返回错误时抛出，其 message 即服务端文案
+   */
+  async post<T>(url: string, data?: unknown): Promise<ApiResponse<T>> {
+    const response = await axiosInstance.post<ApiResponse<T>>(url, data);
+    const body = response.data;
+
+    if (!body.status) {
+      throw new ApiError(body.message || "请求失败", response.status);
+    }
+
+    return body;
+  },
+
+  /**
+   * 发起 PUT 请求
+   * @throws {ApiError} 服务端返回错误时抛出，其 message 即服务端文案
+   */
+  async put<T>(url: string, data?: unknown): Promise<ApiResponse<T>> {
+    const response = await axiosInstance.put<ApiResponse<T>>(url, data);
+    const body = response.data;
+
     if (!body.status) {
       throw new ApiError(body.message || "请求失败", response.status);
     }

@@ -3,6 +3,19 @@
     <!-- 加载态 -->
     <el-skeleton v-if="loading" :rows="8" animated />
 
+    <!-- 无权限：VIP 专属笔记 -->
+    <el-result
+      v-else-if="forbidden"
+      icon="warning"
+      title="这篇笔记为 VIP 专属"
+      sub-title="开通会员或联系管理员获取阅读权益后，即可查看完整脑图"
+    >
+      <template #extra>
+        <el-button type="primary" @click="goUpgrade">前往申请会员</el-button>
+        <el-button @click="goNotes">返回攻略笔记</el-button>
+      </template>
+    </el-result>
+
     <!-- 错误态：笔记不存在或链接非法 -->
     <el-result v-else-if="errorMessage" icon="warning" :title="errorMessage" sub-title="请检查链接，或返回攻略笔记重新进入">
       <template #extra>
@@ -39,7 +52,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 // 局部引入而非全局注册：内含 d3 / rough.js，放在这里可随本路由懒加载
 import { MarkmapSketch } from "@zhangxianjue/markmap";
@@ -55,10 +68,13 @@ const props = defineProps<{
 }>();
 
 const router = useRouter();
+const route = useRoute();
 
 const note = ref<Note | null>(null);
 const loading = ref(true);
 const errorMessage = ref("");
+/** 笔记为 VIP 专属且访客无阅读权益（服务端 403） */
+const forbidden = ref(false);
 
 /** 空串表示还没录入正文，此时不渲染画布而给空态 */
 const hasContent = computed(() => !!note.value?.content.trim());
@@ -74,13 +90,19 @@ const fetchNote = async (): Promise<void> => {
 
   loading.value = true;
   errorMessage.value = "";
+  forbidden.value = false;
   try {
     const res = await noteService.getDetail(id);
     note.value = res.data;
   } catch (error) {
     note.value = null;
-    // 服务端文案如「笔记不存在」，可直接展示
-    errorMessage.value = error instanceof Error ? error.message : "笔记加载失败";
+    const statusCode = (error as { statusCode?: number }).statusCode;
+    if (statusCode === 403) {
+      forbidden.value = true;
+    } else {
+      // 服务端文案如「笔记不存在」，可直接展示
+      errorMessage.value = error instanceof Error ? error.message : "笔记加载失败";
+    }
   } finally {
     loading.value = false;
   }
@@ -88,6 +110,11 @@ const fetchNote = async (): Promise<void> => {
 
 const goNotes = (): void => {
   router.push({ name: "Notes" });
+};
+
+/** 去个人中心申请会员；登录后由路由守卫带回 */
+const goUpgrade = (): void => {
+  router.push({ name: "Account", query: { upgrade: "1", redirect: route.fullPath } });
 };
 
 /**

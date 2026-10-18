@@ -41,7 +41,7 @@
         因此这里刻意不给固定高度，让内容自然撑开。
       -->
       <div class="markdown-body">
-        <Markdown :model-value="article.content" mode="previewOnly" toc-mode="auto" />
+        <Markdown :model-value="article.content" mode="previewOnly" toc-mode="auto" :toc-default-collapsed="tocDefaultCollapsed" />
       </div>
     </template>
   </div>
@@ -71,6 +71,14 @@ const router = useRouter();
 const article = ref<Article | null>(null);
 const loading = ref(true);
 const errorMessage = ref("");
+
+/**
+ * 移动端默认收起目录
+ *
+ * 悬浮目录宽 240px，在手机上会盖住正文；收起后只剩左侧一枚小按钮。
+ * 桌面端保持默认展开。
+ */
+const tocDefaultCollapsed = typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches;
 
 /**
  * 「前往笔记」的跳转目标
@@ -181,6 +189,14 @@ watch(
 @media (max-width: 640px) {
   .markdown-body {
     padding: 16px;
+  }
+
+  .article-title {
+    font-size: 1.3rem;
+  }
+
+  .article-detail {
+    padding-bottom: 20px;
   }
 }
 

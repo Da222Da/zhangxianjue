@@ -12,7 +12,8 @@
 
     <!-- 局部引入而非全局注册：编辑器内含 d3 / rough.js，放在这里可随本弹窗懒加载 -->
     <div v-else class="editor-wrapper">
-      <MarkmapEditor v-model:value="content" height="70vh" placeholder="用 Markdown 写思维导图：# 根节点 / - 分支" />
+      <!-- height=100%：外层 .editor-wrapper 统一控制高度，窄屏媒体查询才能生效 -->
+      <MarkmapEditor v-model:value="content" height="100%" placeholder="用 Markdown 写思维导图：# 根节点 / - 分支" />
     </div>
 
     <template #footer>
@@ -128,5 +129,21 @@ watch(
   margin-right: auto;
   color: var(--el-text-color-placeholder);
   font-size: 12px;
+}
+
+@media (max-width: 768px) {
+  .editor-wrapper {
+    height: 58vh;
+  }
+
+  .dialog-footer {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .form-hint {
+    flex: 1 1 100%;
+    margin-right: 0;
+  }
 }
 </style>

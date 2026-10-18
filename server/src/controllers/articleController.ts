@@ -5,6 +5,7 @@ import { HttpStatusCode } from "../utils/constants/HttpStatus.ts";
 import { BadRequestError } from "../utils/errors.ts";
 import * as articleService from "../services/articleService.ts";
 import type { ArticleListQuery, ArticleMetaPayload } from "../services/articleService.ts";
+import { resolveViewerAccess } from "../services/accessService.ts";
 
 /** 校验并转换正整数（用于路径参数与分页参数） */
 const parsePositiveInt = (raw: unknown, field: string): number => {
@@ -96,6 +97,17 @@ const parseOptionalSort = (raw: unknown): number | undefined => {
   return value;
 };
 
+/** 校验可选的布尔值：undefined 表示保持原值 */
+const parseOptionalBoolean = (raw: unknown, field: string): boolean | undefined => {
+  if (raw === undefined) {
+    return undefined;
+  }
+  if (typeof raw !== "boolean") {
+    throw new BadRequestError(`${field} 必须为布尔值`);
+  }
+  return raw;
+};
+
 /**
  * 解析可选的字符串查询参数
  * 形如 `?keyword=a&keyword=b` 会得到数组，此类非法输入一律拒绝
@@ -139,7 +151,7 @@ const parseArticleMetaPayload = (body: unknown): ArticleMetaPayload => {
   if (typeof body !== "object" || body === null || Array.isArray(body)) {
     throw new BadRequestError("请求体必须为 JSON 对象");
   }
-  const { title, cover, description, category_id, note_id, sort } = body as Record<string, unknown>;
+  const { title, cover, description, category_id, note_id, guest_visible, sort } = body as Record<string, unknown>;
 
   return {
     title: parseRequiredString(title, "title", articleService.MAX_TITLE_LENGTH),
@@ -147,6 +159,7 @@ const parseArticleMetaPayload = (body: unknown): ArticleMetaPayload => {
     description: parseOptionalText(description, "description"),
     category_id: parseOptionalRefId(category_id, "category_id"),
     note_id: parseOptionalRefId(note_id, "note_id"),
+    guest_visible: parseOptionalBoolean(guest_visible, "guest_visible"),
     sort: parseOptionalSort(sort),
   };
 };
@@ -173,7 +186,8 @@ const parseArticleContentPayload = (body: unknown): string => {
 export const getArticles = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const query = parseListQuery(req.query);
-    const { rows, total, currentPage, pageSize } = await articleService.listArticles(query);
+    const access = await resolveViewerAccess(req.body?.user?.id);
+    const { rows, total, currentPage, pageSize } = await articleService.listArticles(query, access.isAuthenticated);
 
     sendApiSuccessResponse(res, HttpStatusCode.OK, rows, "Articles fetched successfully", { total, currentPage, pageSize });
   } catch (error) {
@@ -188,7 +202,8 @@ export const getArticles = async (req: Request, res: Response, next: NextFunctio
 export const getArticleDetail = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const id = parsePositiveInt(req.params.id, "id");
-    const article = await articleService.getArticleById(id);
+    const access = await resolveViewerAccess(req.body?.user?.id);
+    const article = await articleService.getArticleById(id, access.isAuthenticated);
 
     sendApiSuccessResponse(res, HttpStatusCode.OK, article, "Article fetched successfully");
   } catch (error) {

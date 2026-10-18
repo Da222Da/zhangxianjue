@@ -13,6 +13,8 @@ export interface ArticleAttributes {
   category_id: number | null;
   /** 关联笔记 id（关联 Notes 表）；null 表示未关联 */
   note_id: number | null;
+  /** 是否对未登录游客可见；false 时游客在列表与详情中都看不到 */
+  guest_visible: boolean;
   /** 排序号，升序；0 表示未排版 */
   sort: number;
   createdAt: Date;
@@ -22,7 +24,7 @@ export interface ArticleAttributes {
 // 创建 Article 时，id 与时间戳由 Sequelize 生成；其余业务字段允许缺省
 export type ArticleCreationAttributes = Optional<
   ArticleAttributes,
-  "id" | "createdAt" | "updatedAt" | "cover" | "description" | "category_id" | "note_id" | "sort"
+  "id" | "createdAt" | "updatedAt" | "cover" | "description" | "category_id" | "note_id" | "guest_visible" | "sort"
 >;
 
 class Article extends Model<ArticleAttributes, ArticleCreationAttributes> implements ArticleAttributes {
@@ -33,6 +35,7 @@ class Article extends Model<ArticleAttributes, ArticleCreationAttributes> implem
   declare description: string | null;
   declare category_id: number | null;
   declare note_id: number | null;
+  declare guest_visible: boolean;
   declare sort: number;
   declare createdAt: Date;
   declare updatedAt: Date;
@@ -57,6 +60,11 @@ Article.init(
     note_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
+    },
+    guest_visible: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
     },
     sort: {
       type: DataTypes.INTEGER,

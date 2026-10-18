@@ -26,6 +26,12 @@ export const useAuthStore = defineStore("auth", {
     /** 是否已登录，路由守卫与请求拦截器均以此为准 */
     isAuthenticated: (state): boolean => !!state.accessToken,
     displayName: (state): string => state.user?.username ?? "",
+    /** 当前账号的权限编码；user 尚未加载时为空数组 */
+    permissions: (state): string[] => state.user?.permissions ?? [],
+    /** 是否具备某个权限；用于菜单、路由守卫与按钮级控制 */
+    hasPermission: (state) => {
+      return (code: string): boolean => state.user?.permissions?.includes(code) ?? false;
+    },
   },
 
   actions: {

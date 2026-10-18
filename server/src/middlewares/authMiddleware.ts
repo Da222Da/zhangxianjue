@@ -8,7 +8,7 @@ import { verifyToken } from "../utils/token.ts";
  * 鉴权中间件
  *
  * 校验 `Authorization: Bearer <token>`，通过后把令牌载荷挂到 `req.body.user`，
- * 供后续的 roleMiddleware 与 controller 使用。
+ * 供后续的 permissionMiddleware 与 controller 使用。
  *
  * ⚠️ 只接受用途为 access 的令牌：刷新令牌不能直接访问业务接口。
  */

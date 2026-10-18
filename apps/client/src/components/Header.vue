@@ -18,21 +18,112 @@
       </router-link>
 
       <!-- 主导航：当前项加深加粗，并在文字下方带一条主色下划线 -->
-      <nav class="site-nav">
+      <nav class="site-nav" aria-label="主导航">
         <router-link v-for="item in navItems" :key="item.to" :to="item.to" class="nav-item" :class="{ 'is-active': item.section === activeSection }">
           {{ item.label }}
         </router-link>
       </nav>
+
+      <div class="header-actions">
+        <!-- 已登录：头像 + 下拉菜单 -->
+        <el-dropdown v-if="authStore.isAuthenticated" trigger="click">
+          <button type="button" class="user-trigger" aria-label="账号菜单">
+            <el-avatar :size="30" :src="avatarUrl" class="user-avatar">{{ authStore.initial }}</el-avatar>
+            <span class="user-name">{{ authStore.displayName }}</span>
+          </button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item disabled>{{ authStore.user?.phone || authStore.user?.username }}</el-dropdown-item>
+              <el-dropdown-item divided @click="goAccount">个人中心</el-dropdown-item>
+              <el-dropdown-item @click="handleLogout">退出登录</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
+
+        <!-- 未登录：登录 / 注册入口放在页头右侧（参考图红框位置） -->
+        <template v-else>
+          <router-link class="auth-login" :to="loginRoute">登录</router-link>
+          <router-link class="auth-register" :to="registerRoute">注册</router-link>
+        </template>
+
+        <!-- 移动端汉堡按钮 -->
+        <button
+          type="button"
+          class="menu-toggle"
+          :aria-expanded="drawerOpen"
+          aria-controls="site-mobile-drawer"
+          aria-label="打开菜单"
+          @click="drawerOpen = true"
+        >
+          <span class="menu-toggle__bar"></span>
+          <span class="menu-toggle__bar"></span>
+          <span class="menu-toggle__bar"></span>
+        </button>
+      </div>
     </div>
+
+    <!-- 移动端抽屉：Teleport 到 body，避免被 header 的层叠上下文裁切 -->
+    <Teleport to="body">
+      <Transition name="drawer-fade">
+        <div v-if="drawerOpen" class="drawer-mask" @click.self="closeDrawer">
+          <aside id="site-mobile-drawer" class="mobile-drawer" role="dialog" aria-modal="true" aria-label="站点菜单">
+            <div class="drawer-header">
+              <span class="drawer-title">探索站点</span>
+              <button type="button" class="drawer-close" aria-label="关闭菜单" @click="closeDrawer">×</button>
+            </div>
+
+            <nav class="drawer-nav">
+              <router-link
+                v-for="item in navItems"
+                :key="item.to"
+                :to="item.to"
+                class="drawer-nav__item"
+                :class="{ 'is-active': item.section === activeSection }"
+                @click="closeDrawer"
+              >
+                <span class="drawer-nav__mark" aria-hidden="true"></span>
+                {{ item.label }}
+              </router-link>
+            </nav>
+
+            <div class="drawer-auth">
+              <template v-if="authStore.isAuthenticated">
+                <div class="drawer-user">
+                  <el-avatar :size="38" :src="avatarUrl">{{ authStore.initial }}</el-avatar>
+                  <div class="drawer-user__meta">
+                    <strong>{{ authStore.displayName }}</strong>
+                    <small>{{ authStore.user?.role_name }} · {{ authStore.user?.phone || authStore.user?.username }}</small>
+                  </div>
+                </div>
+                <router-link class="drawer-auth__button is-primary" :to="{ name: 'Account' }" @click="closeDrawer">个人中心</router-link>
+                <button type="button" class="drawer-auth__button" @click="handleLogout">退出登录</button>
+              </template>
+
+              <template v-else>
+                <router-link class="drawer-auth__button is-primary" :to="loginRoute" @click="closeDrawer">登录</router-link>
+                <router-link class="drawer-auth__button" :to="registerRoute" @click="closeDrawer">注册</router-link>
+              </template>
+            </div>
+          </aside>
+        </div>
+      </Transition>
+    </Teleport>
   </header>
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { ElMessage, ElMessageBox } from "element-plus";
+import { useAuth } from "@/composables/useAuth";
+import { resolveAssetUrl } from "@/services/apiConfig";
 
 const route = useRoute();
 const router = useRouter();
+const { authStore, logout, loadUser } = useAuth();
+
+/** 移动端抽屉开关 */
+const drawerOpen = ref(false);
 
 /**
  * 导航项 = 带 `meta.section.navOrder` 的路由
@@ -68,6 +159,72 @@ const navItems = computed(() =>
  * 因此在 `/notes/1` 时「攻略笔记」依然高亮。
  */
 const activeSection = computed(() => route.meta.section?.en);
+
+/** 头像地址：相对路径需要拼接口 origin */
+const avatarUrl = computed(() => (authStore.user?.avatar ? resolveAssetUrl(authStore.user.avatar) : undefined));
+
+/** 登录 / 注册入口带上当前路径，登录成功后回到这里 */
+const loginRoute = computed(() => ({ name: "Login", query: { redirect: route.fullPath } }));
+const registerRoute = computed(() => ({ name: "Register", query: { redirect: route.fullPath } }));
+
+const closeDrawer = (): void => {
+  drawerOpen.value = false;
+};
+
+const goAccount = (): void => {
+  void router.push({ name: "Account" });
+};
+
+const handleLogout = async (): Promise<void> => {
+  try {
+    await ElMessageBox.confirm("确定要退出登录吗？", "提示", {
+      confirmButtonText: "退出",
+      cancelButtonText: "取消",
+      type: "warning",
+    });
+  } catch {
+    return;
+  }
+
+  closeDrawer();
+  await logout();
+  ElMessage.success("已退出登录");
+};
+
+/** 抽屉打开时锁住页面滚动，并支持 Esc 关闭 */
+const handleKeydown = (event: KeyboardEvent): void => {
+  if (event.key === "Escape") {
+    closeDrawer();
+  }
+};
+
+/** 窗口拉宽到桌面尺寸时收起抽屉，避免遮罩残留 */
+const handleResize = (): void => {
+  if (window.innerWidth > 768) {
+    closeDrawer();
+  }
+};
+
+watch(drawerOpen, (open) => {
+  document.body.style.overflow = open ? "hidden" : "";
+  if (open) {
+    window.addEventListener("keydown", handleKeydown);
+  } else {
+    window.removeEventListener("keydown", handleKeydown);
+  }
+});
+
+onMounted(() => {
+  window.addEventListener("resize", handleResize);
+  // 角色 / 权限可能在后台调整过，进入页面时补拉一次用户信息
+  void loadUser();
+});
+
+onBeforeUnmount(() => {
+  document.body.style.overflow = "";
+  window.removeEventListener("keydown", handleKeydown);
+  window.removeEventListener("resize", handleResize);
+});
 </script>
 
 <style scoped>
@@ -197,6 +354,259 @@ const activeSection = computed(() => route.meta.section?.en);
   mask-size: 36px 5px;
 }
 
+/* ===== 右侧操作区 ===== */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.auth-login {
+  color: var(--text);
+  font-size: 15px;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.auth-login:hover {
+  color: var(--text-h);
+}
+
+/* 注册按钮：手绘纸片，与站内卡片同一套描边与错位投影 */
+.auth-register {
+  padding: 7px 16px;
+  border: var(--sketch-line) solid var(--ink);
+  border-radius: var(--sketch-radius-sm);
+  background: var(--accent-bg);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 2px 2px 0 var(--sketch-shadow);
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+
+.auth-register:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--sketch-shadow);
+}
+
+.user-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-h);
+  font: inherit;
+  cursor: pointer;
+}
+
+.user-avatar {
+  border: var(--sketch-line) solid var(--ink);
+  background: var(--accent-bg);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.user-name {
+  max-width: 120px;
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 汉堡按钮：桌面隐藏，移动端显示 */
+.menu-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 36px;
+  height: 36px;
+  padding: 0 7px;
+  border: var(--sketch-line) solid var(--ink);
+  border-radius: var(--sketch-radius-sm);
+  background: var(--surface);
+  box-shadow: 2px 2px 0 var(--sketch-shadow);
+  cursor: pointer;
+}
+
+.menu-toggle__bar {
+  display: block;
+  width: 100%;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--ink);
+}
+
+/* ===== 移动端抽屉 ===== */
+.drawer-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: flex-end;
+  background: rgb(47 53 66 / 38%);
+  backdrop-filter: blur(2px);
+}
+
+.mobile-drawer {
+  display: flex;
+  flex-direction: column;
+  width: min(320px, 86vw);
+  height: 100%;
+  padding: 22px 20px;
+  box-sizing: border-box;
+  border-left: var(--sketch-line) solid var(--ink);
+  background: var(--surface);
+  box-shadow: -8px 0 30px rgb(47 53 66 / 18%);
+}
+
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+
+.drawer-title {
+  color: var(--text-h);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.drawer-close {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.drawer-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.drawer-nav__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 10px;
+  border-radius: var(--sketch-radius-sm);
+  color: var(--text);
+  font-size: 16px;
+  text-decoration: none;
+}
+
+.drawer-nav__item:hover {
+  background: var(--accent-bg);
+}
+
+.drawer-nav__item.is-active {
+  color: var(--text-h);
+  font-weight: 600;
+}
+
+.drawer-nav__mark {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  background: var(--border);
+  transform: rotate(-4deg);
+}
+
+.drawer-nav__item.is-active .drawer-nav__mark {
+  background: var(--orange);
+}
+
+.drawer-auth {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1.5px dashed var(--border);
+}
+
+.drawer-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.drawer-user__meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.drawer-user__meta strong {
+  color: var(--text-h);
+  font-size: 14px;
+}
+
+.drawer-user__meta small {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.drawer-auth__button {
+  display: block;
+  padding: 11px 14px;
+  border: var(--sketch-line) solid var(--ink);
+  border-radius: var(--sketch-radius-sm);
+  background: var(--surface);
+  color: var(--text-h);
+  font: inherit;
+  font-size: 15px;
+  text-align: center;
+  text-decoration: none;
+  box-shadow: 2px 2px 0 var(--sketch-shadow);
+  cursor: pointer;
+}
+
+.drawer-auth__button.is-primary {
+  background: var(--accent-bg);
+  font-weight: 600;
+}
+
+/* 抽屉过渡 */
+.drawer-fade-enter-active,
+.drawer-fade-leave-active {
+  transition: opacity 0.22s ease;
+}
+
+.drawer-fade-enter-active .mobile-drawer,
+.drawer-fade-leave-active .mobile-drawer {
+  transition: transform 0.22s ease;
+}
+
+.drawer-fade-enter-from,
+.drawer-fade-leave-to {
+  opacity: 0;
+}
+
+.drawer-fade-enter-from .mobile-drawer,
+.drawer-fade-leave-to .mobile-drawer {
+  transform: translateX(100%);
+}
+
 @media (max-width: 768px) {
   .header-inner {
     gap: 16px;
@@ -204,7 +614,25 @@ const activeSection = computed(() => route.meta.section?.en);
   }
 
   .site-nav {
-    gap: 18px;
+    display: none;
+  }
+
+  .header-actions {
+    margin-left: auto;
+  }
+
+  /* 未登录时移动端只留汉堡入口，登录 / 注册收进抽屉 */
+  .auth-login,
+  .auth-register {
+    display: none;
+  }
+
+  .user-name {
+    display: none;
+  }
+
+  .menu-toggle {
+    display: flex;
   }
 }
 </style>

@@ -2,7 +2,8 @@
 import { Router } from "express";
 import { createTimelineEvent, deleteTimelineEvent, getTimelineEvents, updateTimelineEvent } from "../controllers/timelineController.ts";
 import { authMiddleware } from "../middlewares/authMiddleware.ts";
-import { adminOnly } from "../middlewares/roleMiddleware.ts";
+import { requirePermission } from "../middlewares/permissionMiddleware.ts";
+import { Permissions } from "../utils/constants/permissions.ts";
 
 const router = Router();
 
@@ -10,7 +11,7 @@ const router = Router();
  * @swagger
  * tags:
  *   name: Timeline
- *   description: 时间轴事件。列表公开访问，创建 / 更新 / 删除需登录且仅管理员
+ *   description: 时间轴事件。列表公开访问，创建 / 更新 / 删除需登录且具备 timeline:manage 权限
  */
 
 /**
@@ -156,7 +157,7 @@ router.get("/", getTimelineEvents);
  *   post:
  *     tags: [Timeline]
  *     summary: 创建时间轴事件
- *     description: 需要登录，仅管理员。buttons 是数组，每个按钮的 text 与 url 都必须填写，最多 5 个
+ *     description: 需要登录，且具备 timeline:manage 权限。buttons 是数组，每个按钮的 text 与 url 都必须填写，最多 5 个
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -185,7 +186,7 @@ router.get("/", getTimelineEvents);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
- *         description: 已登录但角色不足（这些接口仅管理员可调用）
+ *         description: 已登录但缺少 timeline:manage 权限
  *         content:
  *           application/json:
  *             schema:
@@ -197,7 +198,7 @@ router.get("/", getTimelineEvents);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post("/", authMiddleware, adminOnly, createTimelineEvent);
+router.post("/", authMiddleware, requirePermission(Permissions.TIMELINE_MANAGE), createTimelineEvent);
 
 /**
  * @swagger
@@ -205,7 +206,7 @@ router.post("/", authMiddleware, adminOnly, createTimelineEvent);
  *   put:
  *     tags: [Timeline]
  *     summary: 更新时间轴事件
- *     description: 需要登录，仅管理员。description / buttons / sort 未传入时保持原值；buttons 为**整体替换**，传空数组或 null 表示清空
+ *     description: 需要登录，且具备 timeline:manage 权限。description / buttons / sort 未传入时保持原值；buttons 为**整体替换**，传空数组或 null 表示清空
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -243,7 +244,7 @@ router.post("/", authMiddleware, adminOnly, createTimelineEvent);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
- *         description: 已登录但角色不足（这些接口仅管理员可调用）
+ *         description: 已登录但缺少 timeline:manage 权限
  *         content:
  *           application/json:
  *             schema:
@@ -261,7 +262,7 @@ router.post("/", authMiddleware, adminOnly, createTimelineEvent);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.put("/:id", authMiddleware, adminOnly, updateTimelineEvent);
+router.put("/:id", authMiddleware, requirePermission(Permissions.TIMELINE_MANAGE), updateTimelineEvent);
 
 /**
  * @swagger
@@ -269,7 +270,7 @@ router.put("/:id", authMiddleware, adminOnly, updateTimelineEvent);
  *   delete:
  *     tags: [Timeline]
  *     summary: 删除时间轴事件
- *     description: 需要登录，仅管理员。删除成功时响应体不含 data 字段
+ *     description: 需要登录，且具备 timeline:manage 权限。删除成功时响应体不含 data 字段
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -308,7 +309,7 @@ router.put("/:id", authMiddleware, adminOnly, updateTimelineEvent);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
- *         description: 已登录但角色不足（这些接口仅管理员可调用）
+ *         description: 已登录但缺少 timeline:manage 权限
  *         content:
  *           application/json:
  *             schema:
@@ -326,6 +327,6 @@ router.put("/:id", authMiddleware, adminOnly, updateTimelineEvent);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.delete("/:id", authMiddleware, adminOnly, deleteTimelineEvent);
+router.delete("/:id", authMiddleware, requirePermission(Permissions.TIMELINE_MANAGE), deleteTimelineEvent);
 
 export default router;

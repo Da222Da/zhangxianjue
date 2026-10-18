@@ -149,4 +149,20 @@ watch(
   color: var(--el-text-color-placeholder);
   font-size: 12px;
 }
+
+@media (max-width: 768px) {
+  .editor-wrapper {
+    height: 58vh;
+  }
+
+  .dialog-footer {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .form-hint {
+    flex: 1 1 100%;
+    margin-right: 0;
+  }
+}
 </style>

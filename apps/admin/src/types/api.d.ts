@@ -3,13 +3,28 @@
 export interface LoginResponse {
   token: string;
   refreshToken: string;
-  [prop: string]: any;
+  /** 登录接口顺带返回的用户信息（含角色与权限） */
+  user: User;
 }
 
-/** 登录入参 */
+/**
+ * 后台登录入参
+ *
+ * `phone` 与 `username` 二选一；后台登录不要求图形验证码。
+ */
 export interface LoginParams {
-  username: string;
+  /** 手机号（与 username 二选一） */
+  phone?: string;
+  /** 用户名（与 phone 二选一） */
+  username?: string;
   password: string;
+}
+
+/** 本地开发自动登录入参；均可省略，省略时服务端使用 DEV_LOGIN_* */
+export interface DevLoginParams {
+  phone?: string;
+  username?: string;
+  password?: string;
 }
 
 /** 服务端错误响应体，由 errorMiddleware 统一输出 */
@@ -76,6 +91,8 @@ export interface Article {
   note_id: number | null;
   /** 关联笔记标题（服务端由关联查出，只读）；null 表示未关联 */
   note_title: string | null;
+  /** 是否对未登录游客可见；false 时游客在列表与详情中都看不到 */
+  guest_visible: boolean;
   /** 排序号，升序；0 表示未排版 */
   sort: number;
   createdAt: string;
@@ -94,6 +111,8 @@ export interface ArticleMetaPayload {
   category_id?: number | null;
   /** 不传表示不设置；更新时不传保持原值，传 null 表示解除关联 */
   note_id?: number | null;
+  /** 不传表示创建时默认游客可见 / 更新时保持原值 */
+  guest_visible?: boolean;
   /** 不传表示不设置；更新时不传表示保持原值 */
   sort?: number;
 }
@@ -117,6 +136,7 @@ export interface ArticleDraft {
   description: string | null;
   category_id: number | null;
   note_id: number | null;
+  guest_visible: boolean;
   sort: number;
 }
 
@@ -137,6 +157,10 @@ export interface NoteListItem {
   category_id: number | null;
   /** 分类名（服务端由关联查出，只读）；null 表示未分类 */
   category: string | null;
+  /** 是否限免；false 表示 VIP 专属，游客与普通用户无法阅读正文 */
+  is_free: boolean;
+  /** 是否对未登录游客可见；false 时游客在列表与详情中都看不到 */
+  guest_visible: boolean;
   /** 排序号，升序；0 表示未排版 */
   sort: number;
   createdAt: string;
@@ -157,6 +181,10 @@ export interface NoteMetaPayload {
   description?: string | null;
   /** 不传表示不设置；更新时不传保持原值，传 null 表示移到未分类 */
   category_id?: number | null;
+  /** 不传表示创建时为 VIP 专属 / 更新时保持原值 */
+  is_free?: boolean;
+  /** 不传表示创建时默认游客可见 / 更新时保持原值 */
+  guest_visible?: boolean;
   /** 不传表示不设置；更新时不传表示保持原值 */
   sort?: number;
 }
@@ -179,6 +207,8 @@ export interface NoteDraft {
   cover: string | null;
   description: string | null;
   category_id: number | null;
+  is_free: boolean;
+  guest_visible: boolean;
   sort: number;
 }
 
@@ -269,32 +299,289 @@ export interface PaginatedResponse<T> {
 }
 
 // 用户相关
+/** 账号状态：1 启用 / 0 禁用 */
+export type UserStatus = 0 | 1;
+
+/** 用户公开信息（服务端不返回密码） */
 export interface User {
   id: number;
   username: string;
-  email: string;
-  role_id: number;
+  /** 手机号；client / 后台均可作为登录标识 */
+  phone: string | null;
   avatar: string;
-  phone: string;
+  role_id: number;
+  /** 角色名（服务端由关联查出，只读） */
+  role_name: string;
+  /** 角色编码（服务端由关联查出，只读） */
+  role_code: string;
+  /** 会员到期时间；非会员为 null */
+  membership_expires_at: string | null;
+  status: UserStatus;
+  /** 该角色拥有的权限编码，前端据此控制菜单与按钮 */
+  permissions: string[];
   createdAt: string;
   updatedAt: string;
-  [prop: string]: any;
 }
+
+/** 创建用户入参 */
+export interface CreateUserPayload {
+  username: string;
+  /** 可选；建议填写，否则该账号无法在 client 用手机号登录 */
+  phone?: string;
+  password: string;
+  avatar?: string;
+  role_id: number;
+  /** 仅会员角色有意义；不传默认当前时间 + 1 年 */
+  membership_expires_at?: string | null;
+  /** 不传默认 1（启用） */
+  status?: UserStatus;
+}
+
+/** 更新用户入参；未提交的字段保持原值 */
+export interface UpdateUserPayload {
+  username?: string;
+  /** 传 null 或空串表示清空 */
+  phone?: string | null;
+  avatar?: string;
+  role_id?: number;
+  /** 仅会员角色有意义；传 null 时服务端重新给 1 年 */
+  membership_expires_at?: string | null;
+  status?: UserStatus;
+}
+
+/** 管理员重置密码入参 */
+export interface ResetPasswordPayload {
+  password: string;
+}
+
+/** 用户列表查询参数（type 才能直接赋给 apiClient 的 params） */
+export type UserListParams = {
+  keyword?: string;
+  role_id?: number;
+  status?: UserStatus;
+  page?: number;
+  pageSize?: number;
+};
+
 // 角色相关
+/** 角色实体 */
 export interface Role {
   id: number;
   name: string;
-  description?: string;
+  /** 角色编码：内置 admin / user，自定义角色由服务端生成 */
+  code: string;
+  description: string | null;
+  /** 系统内置角色不可删除 */
+  is_system: boolean;
+  /** 该角色下的用户数 */
+  user_count: number;
+  permission_ids: number[];
+  permission_codes: string[];
   createdAt: string;
   updatedAt: string;
-  [prop: string]: any;
 }
+
+/** 更新角色入参 */
+export interface UpdateRolePayload {
+  name: string;
+  description?: string | null;
+}
+
+/** 创建角色入参 */
+export interface CreateRolePayload extends UpdateRolePayload {
+  /** 不传表示不分配权限 */
+  permission_ids?: number[];
+}
+
+/** 重设角色权限入参（整体替换） */
+export interface RolePermissionsPayload {
+  permission_ids: number[];
+}
+
 // 权限相关
+/** 权限点（目录由服务端迁移定义，后台只负责分配给角色） */
 export interface Permission {
   id: number;
+  code: string;
   name: string;
-  description?: string;
+  /** 分组名，后台按组渲染 */
+  group_name: string;
+  description: string | null;
   createdAt: string;
   updatedAt: string;
-  [prop: string]: any;
 }
+
+// 书库相关
+/** 书籍列表项（含章节数） */
+/** 书籍标签的简要信息（随书籍返回） */
+export interface BookTagRef {
+  id: number;
+  name: string;
+}
+
+/** 书籍分类（后台管理用，含排序与时间戳） */
+export interface BookCategoryItem {
+  id: number;
+  name: string;
+  sort: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 书籍标签（后台管理用，含排序与时间戳） */
+export interface BookTagItem {
+  id: number;
+  name: string;
+  sort: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 新增 / 编辑分类、标签的入参 */
+export interface BookTaxonomyPayload {
+  name: string;
+  sort?: number;
+}
+
+export interface Book {
+  id: number;
+  title: string;
+  cover: string | null;
+  description: string | null;
+  /** 分类 id；null 表示未分类 */
+  category_id: number | null;
+  /** 分类名（服务端由关联查出，只读）；null 表示未分类 */
+  category: string | null;
+  /** 标签列表 */
+  tags: BookTagRef[];
+  /** 是否限免；false 表示 VIP 专属 */
+  is_free: boolean;
+  /** 是否对未登录游客可见；false 时游客在列表与详情中都看不到 */
+  guest_visible: boolean;
+  sort: number;
+  /** 分卷数（服务端聚合，只读） */
+  volume_count: number;
+  /** 章节数（服务端聚合，只读） */
+  chapter_count: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 分卷元数据 */
+export interface Volume {
+  id: number;
+  book_id: number;
+  title: string;
+  sort: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 分卷及其章节（章节不含正文） */
+export interface VolumeWithChapters extends Volume {
+  chapters: ChapterListItem[];
+}
+
+/** 章节元数据（不含正文） */
+export interface ChapterListItem {
+  id: number;
+  book_id: number;
+  volume_id: number;
+  title: string;
+  summary: string | null;
+  sort: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 书籍详情（含分卷与章节列表） */
+export interface BookDetail extends Book {
+  volumes: VolumeWithChapters[];
+}
+
+/** 章节详情（含 Markdown 正文） */
+export interface ChapterDetail extends ChapterListItem {
+  content: string;
+}
+
+/** 创建 / 更新书籍的入参 */
+export interface BookPayload {
+  title: string;
+  cover?: string | null;
+  description?: string | null;
+  /** 不传表示保持原值；传 null 表示移到未分类 */
+  category_id?: number | null;
+  /** 整体替换语义：传空数组表示清空标签，不传表示保持原值 */
+  tag_ids?: number[];
+  /** 不传表示创建时默认 false（VIP 专属）/ 更新时保持原值 */
+  is_free?: boolean;
+  /** 不传表示创建时默认游客可见 / 更新时保持原值 */
+  guest_visible?: boolean;
+  sort?: number;
+}
+
+/** 创建 / 更新分卷的入参 */
+export interface VolumePayload {
+  title: string;
+  sort?: number;
+}
+
+/** 创建 / 更新章节的入参 */
+export interface ChapterPayload {
+  /** 创建时必填；更新时传入表示移动到另一个分卷 */
+  volume_id?: number;
+  title: string;
+  summary?: string | null;
+  content?: string;
+  sort?: number;
+}
+
+/** 书籍元数据弹窗内的共享草稿 */
+export interface BookDraft {
+  id: number | string;
+  title: string;
+  cover: string | null;
+  description: string | null;
+  category_id: number | null;
+  tag_ids: number[];
+  is_free: boolean;
+  guest_visible: boolean;
+  sort: number;
+}
+
+/** 章节编辑弹窗内的共享草稿 */
+export interface ChapterDraft {
+  id: number | string;
+  /** 所属分卷；null 表示尚未选择 */
+  volume_id: number | null;
+  title: string;
+  summary: string | null;
+  content: string;
+  sort: number;
+}
+
+// 会员申请相关
+export type MembershipApplicationStatus = "pending" | "approved" | "rejected";
+
+/** 后台会员申请列表项 */
+export interface MembershipApplicationItem {
+  id: number;
+  user_id: number;
+  username: string;
+  phone: string | null;
+  role_id: number;
+  role_name: string;
+  role_code: string;
+  status: MembershipApplicationStatus;
+  reviewed_by: number | null;
+  reviewed_at: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 会员申请列表查询参数 */
+export type MembershipListParams = {
+  status?: MembershipApplicationStatus;
+  page?: number;
+  pageSize?: number;
+};

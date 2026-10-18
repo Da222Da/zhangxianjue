@@ -13,6 +13,12 @@ body,
   scroll-behavior: smooth;
   margin: 0;
   padding: 0;
+  max-width: 100%;
+}
+
+body {
+  /* 固定列 + 表格内部滚动；页面本身不允许被撑出横向滚动条 */
+  overflow-x: hidden;
 }
 
 /* 修改滚动条整体样式 */
@@ -55,5 +61,87 @@ body,
 
 .el-table {
   --el-table-header-bg-color: #f5f7fa;
+}
+
+/*
+ * 响应式基线
+ *
+ * 页面内各组件只负责自己的局部排版；这里统一收口 Element Plus 的
+ * 弹窗 / 分页 / 表单标签，避免每个弹窗重复写同一套媒体查询。
+ */
+@media (max-width: 768px) {
+  /* 所有弹窗在窄屏占满可用宽度，宽度由各弹窗自己的 max-width 决定 */
+  .el-dialog {
+    width: 92vw !important;
+    max-width: 92vw;
+    margin: 5vh auto !important;
+  }
+
+  .el-dialog__body {
+    padding: 16px;
+  }
+
+  .el-dialog__footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  /* Element Plus 默认给相邻按钮加外边距，改用 flex gap 后清掉 */
+  .el-dialog__footer .el-button + .el-button {
+    margin-left: 0;
+  }
+
+  .el-message-box {
+    width: 92vw !important;
+    max-width: 92vw;
+  }
+
+  /* 分页项在窄屏居中换行，隐藏非必要的每页条数选择器 */
+  .pagination.el-pagination {
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 8px;
+  }
+
+  .pagination .el-pagination__sizes {
+    display: none;
+  }
+
+  /*
+   * 窄屏取消表格固定列：操作列已经排在最前面，继续 sticky 会占满
+   * 整个手机宽度，反而看不到其它列。取消固定后按正常横向滚动查看。
+   */
+  .el-table .el-table-fixed-column--left,
+  .el-table .el-table-fixed-column--right {
+    position: static !important;
+  }
+
+  .el-table .el-table-fixed-column--left::before,
+  .el-table .el-table-fixed-column--right::before {
+    content: none !important;
+  }
+}
+
+@media (max-width: 600px) {
+  /* 窄屏表单标签改为上下结构，给输入控件留出整行宽度 */
+  .el-dialog .el-form-item {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .el-dialog .el-form-item__label {
+    width: auto !important;
+    justify-content: flex-start;
+    padding: 0 0 4px;
+    text-align: left;
+  }
+
+  .el-dialog .el-form-item__content {
+    flex-wrap: wrap;
+    margin-left: 0 !important;
+  }
 }
 

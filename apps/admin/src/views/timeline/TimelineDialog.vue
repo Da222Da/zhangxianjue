@@ -200,4 +200,11 @@ watch(
   gap: 8px;
   flex-wrap: wrap;
 }
+
+@media (max-width: 600px) {
+  .form-hint {
+    width: 100%;
+    margin-left: 0;
+  }
+}
 </style>

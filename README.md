@@ -6,9 +6,9 @@
 
 | 目录                            | 定位                     | 技术栈                                                     | 说明                                            |
 | :------------------------------ | :----------------------- | :--------------------------------------------------------- | :---------------------------------------------- |
-| [`server`](./server/)           | 后端服务                 | Node.js + Express 5 + TypeScript + Sequelize 6 + MySQL      | 认证、时间轴 / 文章 / 笔记 CRUD、分类、图片上传、Swagger 文档 |
-| [`apps/admin`](./apps/admin/)   | 后台管理端               | Vue 3 + TS + Vite + Element Plus + Pinia                    | 登录后维护时间轴、文章、笔记与树形分类 |
-| [`apps/client`](./apps/client/) | 前台展示端               | Vue 3 + TS + Vite + Element Plus                            | 时间轴首页、攻略笔记卡片墙（思维导图）与文章阅读 |
+| [`server`](./server/)           | 后端服务                 | Node.js + Express 5 + TypeScript + Sequelize 6 + MySQL      | 手机号认证 + 图形验证码、RBAC（用户 / 角色 / 权限）、书库（分卷 / 分类 / 标签 / 限免 / 游客可见）、会员申请、时间轴 / 文章 / 笔记 CRUD、分类、图片上传、Swagger 文档 |
+| [`apps/admin`](./apps/admin/)   | 后台管理端               | Vue 3 + TS + Vite + Element Plus + Pinia                    | 登录后维护时间轴、文章、笔记、分类、书库（书籍 / 分卷 / 章节 / 分类 / 标签 / 限免 / 游客可见）与用户 / 会员申请 / 角色 / 权限 |
+| [`apps/client`](./apps/client/) | 前台展示端               | Vue 3 + TS + Vite + Element Plus + Pinia                    | 手机号登录注册、找回密码、个人中心、书库阅读（分卷 / 限免 / VIP）、移动端导航、时间轴、攻略笔记（思维导图）与文章阅读 |
 | [`packages/`](./packages/)      | 内部组件库               | —                                                           | markdown、markmap          |
 
 ## 快速开始
@@ -35,6 +35,19 @@ npm run dev:client    # 前台展示端（公开阅读）
 ```
 
 两个前端都直连 `http://localhost:3000/api`，可用 `VITE_API_BASE_URL` 覆盖。
+
+**本地免登录（可选）**：复制两个前端的 env 示例并填入管理员账号：
+
+```bash
+cp apps/client/.env.example apps/client/.env
+cp apps/admin/.env.example apps/admin/.env
+```
+
+在两个前端 `.env` 里设置 `VITE_DEV_AUTO_LOGIN=true`，并填入
+`VITE_DEV_AUTO_LOGIN_PHONE` / `VITE_DEV_AUTO_LOGIN_USERNAME` 与 `VITE_DEV_AUTO_LOGIN_PASSWORD`；
+开发模式下打开登录页就会自动登录。账号密码留空时，会回退到 `server/.env` 的
+`DEV_LOGIN_PHONE` / `DEV_LOGIN_PASSWORD`（同时需要 `DEV_LOGIN_ENABLED=true`）。
+开发登录接口只接受本机回环地址。`.env` 已被 gitignore，**不要用于生产环境**。
 
 ### 3. 一次起全（后端 + 两个前端）
 
@@ -80,6 +93,17 @@ Ctrl+C 会一起停掉三个。只想跑其中一两个，仍可用上面的 `de
 
 - **分层不可跨层调用**：后端 routes / controllers / services / models 四层；前端 view / component / composable / store / api 五层。详见 [`Prompt.md`](./Prompt.md)。
 - **响应体统一带 `status` 布尔标记**：成功 `true`、错误 `false`，前端拦截器据此判定。
+- **权限是 RBAC**：`Roles` + `Permissions` + `RolePermissions`，写接口用 `requirePermission(...)` 校验编码；
+  内置角色与权限点由**迁移**写入（不是 seeder）。前端只用同一套编码控制菜单与路由入口，真正的拦截在服务端。
+- **登录统一用手机号或用户名**：client 走 `/api/auth/login`，带一次性图形验证码；
+  admin 走 `/api/auth/admin/login`，不要求验证码但会校验 `admin:access`。
+  两个前端可在本地 `.env` 中配置 `VITE_DEV_AUTO_LOGIN_*`，开发模式下自动登录；
+  `.env` 已被 gitignore，**不要用于生产构建**。
+- **书库 / 笔记按内容鉴权**：列表公开并显示「限免 / VIP」角标；`is_free` 内容游客可读，
+  非限免内容需要 `library:view`（会员 / 朋友 / 管理员）。会员升级走「用户申请 → 管理员审核」，
+  默认有效期 1 年，到期后服务端自动降级为普通用户。
+- **游客可见是独立开关**：文章 / 笔记 / 书籍的 `guest_visible=false` 时，未登录游客在列表与详情中都看不到；
+  登录后的普通用户即可正常访问，与 `is_free` 的 VIP 阅读权益互不影响。
 - **图片存相对路径**（如 `/uploads/xxx.png`），展示前经各 app 的 `resolveAssetUrl()` 拼接口 origin。
 - **共享包的类型由包自身 `types/index.d.ts` 提供**，消费端不各自写环境声明。
 - **重型可视化组件局部引入**，不在 `main.ts` 全局注册，避免打进入口包。

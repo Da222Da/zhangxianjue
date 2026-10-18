@@ -7,7 +7,7 @@
       </div>
 
       <h1 class="hero-title sketch-underline">文章库</h1>
-      <p class="hero-subtitle">引擎笔记之外的长文，按关键词一搜即达</p>
+      <p class="hero-subtitle">一键直达，搜遍全站文章</p>
 
       <form class="search-box" @submit.prevent="handleSubmit">
         <el-icon class="search-icon" :size="20"><Search /></el-icon>

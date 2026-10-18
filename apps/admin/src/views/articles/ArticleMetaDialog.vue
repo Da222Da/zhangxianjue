@@ -25,10 +25,22 @@
       </el-form-item>
 
       <el-form-item label="关联笔记">
-        <el-select v-model="noteId" class="field-select" filterable clearable placeholder="选择关联笔记（不选则无关联）">
+        <el-select
+          v-model="noteId"
+          class="field-select"
+          filterable
+          clearable
+          no-data-text="暂无可关联的笔记"
+          placeholder="选择关联笔记（不选则无关联）"
+        >
           <el-option v-for="note in noteOptions" :key="note.id" :label="note.title" :value="note.id" />
         </el-select>
         <span class="form-hint">关联后，client 的文章详情页会显示「前往笔记」入口</span>
+      </el-form-item>
+
+      <el-form-item label="游客可见">
+        <el-switch v-model="guestVisible" active-text="可见" inactive-text="隐藏" />
+        <span class="form-hint">关闭后未登录游客在列表与详情中都看不到；登录用户不受影响</span>
       </el-form-item>
 
       <el-form-item label="排序">
@@ -133,6 +145,14 @@ const noteId = computed({
   },
 });
 
+/** 游客可见：关闭后未登录游客在列表与详情中都看不到 */
+const guestVisible = computed({
+  get: () => props.article.guest_visible,
+  set: (val: boolean) => {
+    props.article.guest_visible = val;
+  },
+});
+
 const sort = computed({
   get: () => props.article.sort ?? 0,
   set: (val: number | null) => {
@@ -179,6 +199,7 @@ const handleSubmit = async (): Promise<void> => {
       cover: await cover.resolveForSubmit(),
       category_id: categoryId.value,
       note_id: noteId.value,
+      guest_visible: guestVisible.value,
       sort: sort.value,
     };
 
@@ -262,5 +283,19 @@ watch(
   background: var(--el-fill-color-light);
   color: var(--el-text-color-secondary);
   font-size: 12px;
+}
+
+@media (max-width: 600px) {
+  .field-select {
+    width: 100%;
+  }
+
+  .cover-field {
+    flex-wrap: wrap;
+  }
+
+  .form-hint {
+    width: 100%;
+  }
 }
 </style>

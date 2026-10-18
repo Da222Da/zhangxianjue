@@ -16,6 +16,24 @@ export const PORT: number = Number(process.env.PORT) || 3000;
 export const NODE_ENV: string = process.env.NODE_ENV || "development";
 
 /**
+ * 是否启用本地开发自动登录接口
+ *
+ * 只允许在非 production 环境使用；即使误开，controller 也会限制回环地址。
+ * 对应的 client 变量是 VITE_DEV_AUTO_LOGIN_*。
+ */
+export const DEV_LOGIN_ENABLED: boolean = process.env.DEV_LOGIN_ENABLED === "true";
+
+/**
+ * 开发自动登录使用的账号
+ *
+ * 凭据只放在 server/.env，前端 .env 只保留 VITE_DEV_AUTO_LOGIN=true 开关，
+ * 避免密码被 Vite 打进前端产物。
+ */
+export const DEV_LOGIN_PHONE: string = process.env.DEV_LOGIN_PHONE?.trim() ?? "";
+export const DEV_LOGIN_USERNAME: string = process.env.DEV_LOGIN_USERNAME?.trim() ?? "";
+export const DEV_LOGIN_PASSWORD: string = process.env.DEV_LOGIN_PASSWORD ?? "";
+
+/**
  * 校验有效期写法（如 30m / 1h / 7d），非法时回退默认值
  *
  * jsonwebtoken 的 expiresIn 只接受数字或 ms 库的时长字符串，

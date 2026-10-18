@@ -65,6 +65,8 @@ export interface ArticleListItem {
   note_id: number | null;
   /** 关联笔记标题（由关联查出，只读）；未关联为 null */
   note_title: string | null;
+  /** 是否对未登录游客可见；false 时游客在列表与详情中都看不到 */
+  guest_visible: boolean;
   sort: number;
   createdAt: Date;
   updatedAt: Date;
@@ -114,6 +116,8 @@ export interface ArticleMetaPayload {
   category_id?: number | null;
   /** 不传表示不设置（创建）/ 保持原值（更新）；传 null 表示解除关联 */
   note_id?: number | null;
+  /** 不传表示创建时默认为 true（游客可见）/ 更新时保持原值 */
+  guest_visible?: boolean;
   /** 不传表示不设置（创建取默认值 0）/ 保持原值（更新） */
   sort?: number;
 }
@@ -159,7 +163,10 @@ const buildKeywordCondition = (keyword: string): WhereOptions<ArticleAttributes>
  *
  * ⚠️ 分类筛选是异步的：需要先把整棵子树展开成 id 列表（父分类要命中所有子孙）。
  */
-const buildWhereCondition = async (query: ArticleListQuery): Promise<WhereOptions<ArticleAttributes>> => {
+const buildWhereCondition = async (
+  query: ArticleListQuery,
+  includeGuestHidden: boolean,
+): Promise<WhereOptions<ArticleAttributes>> => {
   const conditions: WhereOptions<ArticleAttributes>[] = [];
 
   if (query.keyword) {
@@ -169,6 +176,9 @@ const buildWhereCondition = async (query: ArticleListQuery): Promise<WhereOption
     const ids = await collectCategoryIds(query.categoryId);
     conditions.push({ category_id: { [Op.in]: ids } });
   }
+  if (!includeGuestHidden) {
+    conditions.push({ guest_visible: true });
+  }
 
   return conditions.length > 0 ? { [Op.and]: conditions } : {};
 };
@@ -176,12 +186,13 @@ const buildWhereCondition = async (query: ArticleListQuery): Promise<WhereOption
 /**
  * 分页查询文章列表
  * @param query 已完成校验的查询条件
+ * @param includeGuestHidden 是否包含「游客不可见」的文章；admin / 已登录用户传 true
  */
-export const listArticles = async (query: ArticleListQuery): Promise<ArticleListResult> => {
+export const listArticles = async (query: ArticleListQuery, includeGuestHidden = true): Promise<ArticleListResult> => {
   const { page, pageSize } = query;
 
   const { count, rows } = await Article.findAndCountAll({
-    where: await buildWhereCondition(query),
+    where: await buildWhereCondition(query, includeGuestHidden),
     include: [CATEGORY_INCLUDE, NOTE_INCLUDE],
     limit: pageSize,
     // 偏移量：跳过前面已翻过的页
@@ -206,9 +217,16 @@ const findArticleOrFail = async (id: number): Promise<ArticleRow> => {
 
 /**
  * 按主键查询文章详情
- * @throws {NotFoundError} 文章不存在
+ * @param includeGuestHidden 是否允许取「游客不可见」的文章；admin / 已登录用户传 true
+ * @throws {NotFoundError} 文章不存在或对游客隐藏
  */
-export const getArticleById = async (id: number): Promise<ArticleDetail> => toDetail(await findArticleOrFail(id));
+export const getArticleById = async (id: number, includeGuestHidden = true): Promise<ArticleDetail> => {
+  const article = await findArticleOrFail(id);
+  if (!article.guest_visible && !includeGuestHidden) {
+    throw new NotFoundError("文章不存在");
+  }
+  return toDetail(article);
+};
 
 /**
  * 创建文章
@@ -225,6 +243,7 @@ export const createArticle = async (payload: ArticleMetaPayload): Promise<Articl
     description: payload.description ?? null,
     category_id: payload.category_id ?? null,
     note_id: payload.note_id ?? null,
+    guest_visible: payload.guest_visible ?? true,
     sort: payload.sort ?? 0,
   });
 
@@ -254,6 +273,9 @@ export const updateArticleMeta = async (id: number, payload: ArticleMetaPayload)
   }
   if (payload.note_id !== undefined) {
     patch.note_id = payload.note_id;
+  }
+  if (payload.guest_visible !== undefined) {
+    patch.guest_visible = payload.guest_visible;
   }
   if (payload.sort !== undefined) {
     patch.sort = payload.sort;

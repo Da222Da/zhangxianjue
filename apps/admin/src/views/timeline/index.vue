@@ -144,7 +144,7 @@ onMounted(() => {
 <style scoped>
 .header-actions {
   display: flex;
-  justify-content: flex-end;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   margin-bottom: 16px;

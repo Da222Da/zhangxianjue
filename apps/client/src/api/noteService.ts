@@ -24,6 +24,7 @@ type NoteListParams = {
  *
  * 与文章一样，读接口挂在 `/admin/note` 前缀下（管理端的路径），
  * 但读操作本身是公开的，client 直接复用。client 只读，不涉及写接口。
+ * 列表返回全部笔记（含 VIP 专属）；VIP 笔记的详情由服务端按 library:view 校验。
  */
 const noteService = {
   /**

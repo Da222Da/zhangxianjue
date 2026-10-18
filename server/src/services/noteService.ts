@@ -3,7 +3,7 @@ import { Op } from "sequelize";
 import type { Order, WhereOptions } from "sequelize";
 import { Category, Note } from "../models/index.ts";
 import type { NoteAttributes, NoteCreationAttributes } from "../models/index.ts";
-import { NotFoundError } from "../utils/errors.ts";
+import { ForbiddenError, NotFoundError } from "../utils/errors.ts";
 import { collectCategoryIds } from "./categoryService.ts";
 
 /** 分页默认页码 */
@@ -58,6 +58,10 @@ export interface NoteListItem {
   category_id: number | null;
   /** 分类名（由关联查出）；未分类为 null */
   category: string | null;
+  /** 是否限免；false 表示 VIP 专属 */
+  is_free: boolean;
+  /** 是否对未登录游客可见；false 时游客在列表与详情中都看不到 */
+  guest_visible: boolean;
   sort: number;
   createdAt: Date;
   updatedAt: Date;
@@ -100,9 +104,14 @@ export interface NoteMetaPayload {
   description?: string | null;
   /** 不传表示不设置（创建）/ 保持原值（更新）；传 null 表示移到未分类 */
   category_id?: number | null;
+  /** 不传表示创建时为 VIP 专属 / 更新时保持原值 */
+  is_free?: boolean;
+  /** 不传表示创建时默认为 true（游客可见）/ 更新时保持原值 */
+  guest_visible?: boolean;
   /** 不传表示不设置（创建取默认值 0）/ 保持原值（更新） */
   sort?: number;
 }
+
 
 /** 把带关联的模型实例摊平成响应体：category 是分类名而非对象 */
 const toPlain = (row: NoteRow): NoteAttributes & { categoryRef?: { name: string } | null } =>
@@ -147,7 +156,10 @@ const buildKeywordCondition = (keyword: string): WhereOptions<NoteAttributes> =>
  *
  * ⚠️ 分类筛选是异步的：需要先把整棵子树展开成 id 列表（父分类要命中所有子孙）。
  */
-const buildWhereCondition = async (query: NoteListQuery): Promise<WhereOptions<NoteAttributes>> => {
+const buildWhereCondition = async (
+  query: NoteListQuery,
+  includeGuestHidden: boolean,
+): Promise<WhereOptions<NoteAttributes>> => {
   const conditions: WhereOptions<NoteAttributes>[] = [];
 
   if (query.keyword) {
@@ -157,19 +169,26 @@ const buildWhereCondition = async (query: NoteListQuery): Promise<WhereOptions<N
     const ids = await collectCategoryIds(query.categoryId);
     conditions.push({ category_id: { [Op.in]: ids } });
   }
+  if (!includeGuestHidden) {
+    conditions.push({ guest_visible: true });
+  }
 
   return conditions.length > 0 ? { [Op.and]: conditions } : {};
 };
 
 /**
  * 分页查询笔记列表（不含 content）
+ *
+ * 登录用户返回全部笔记（含 VIP 专属），前端按 is_free 打角标；
+ * 游客只返回 guest_visible=true 的笔记。真正的正文拦截在详情接口。
  * @param query 已完成校验的查询条件
+ * @param includeGuestHidden 是否包含「游客不可见」的笔记；admin / 已登录用户传 true
  */
-export const listNotes = async (query: NoteListQuery): Promise<NoteListResult> => {
+export const listNotes = async (query: NoteListQuery, includeGuestHidden = true): Promise<NoteListResult> => {
   const { page, pageSize } = query;
 
   const { count, rows } = await Note.findAndCountAll({
-    where: await buildWhereCondition(query),
+    where: await buildWhereCondition(query, includeGuestHidden),
     attributes: LIST_ATTRIBUTES,
     include: [CATEGORY_INCLUDE],
     limit: pageSize,
@@ -200,6 +219,26 @@ const findNoteOrFail = async (id: number): Promise<NoteRow> => {
 export const getNoteById = async (id: number): Promise<NoteDetail> => toDetail(await findNoteOrFail(id));
 
 /**
+ * 按访客权益查询笔记详情
+ * @throws {NotFoundError} 笔记不存在或对游客隐藏
+ * @throws {ForbiddenError} 笔记为 VIP 专属且访客无阅读权益
+ */
+export const getReadableNoteById = async (
+  id: number,
+  includeRestricted: boolean,
+  isAuthenticated: boolean,
+): Promise<NoteDetail> => {
+  const note = await findNoteOrFail(id);
+  if (!note.guest_visible && !isAuthenticated) {
+    throw new NotFoundError("笔记不存在");
+  }
+  if (!note.is_free && !includeRestricted) {
+    throw new ForbiddenError("这篇笔记为 VIP 专属，开通会员或联系管理员获取阅读权益");
+  }
+  return toDetail(note);
+};
+
+/**
  * 创建笔记
  *
  * ⚠️ content 兜底为空串而非 null：该列在库中为 NOT NULL，
@@ -214,6 +253,8 @@ export const createNote = async (payload: NoteMetaPayload): Promise<NoteDetail> 
     cover: payload.cover ?? null,
     description: payload.description ?? null,
     category_id: payload.category_id ?? null,
+    is_free: payload.is_free ?? false,
+    guest_visible: payload.guest_visible ?? true,
     sort: payload.sort ?? 0,
   });
 
@@ -240,6 +281,12 @@ export const updateNoteMeta = async (id: number, payload: NoteMetaPayload): Prom
   }
   if (payload.category_id !== undefined) {
     patch.category_id = payload.category_id;
+  }
+  if (payload.is_free !== undefined) {
+    patch.is_free = payload.is_free;
+  }
+  if (payload.guest_visible !== undefined) {
+    patch.guest_visible = payload.guest_visible;
   }
   if (payload.sort !== undefined) {
     patch.sort = payload.sort;

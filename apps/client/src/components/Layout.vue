@@ -48,4 +48,11 @@ const contentStyle = computed(() => {
   box-sizing: border-box;
   overflow-y: auto;
 }
+
+/* 移动端收窄留白，把宽度还给内容 */
+@media (max-width: 768px) {
+  .box-content {
+    padding: 0.5rem;
+  }
+}
 </style>

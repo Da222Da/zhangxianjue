@@ -9,6 +9,8 @@ interface DemoNote {
   description: string;
   /** 分类名；写入时解析成 category_id（分类树由 demo-categories 先建好） */
   categoryName: string;
+  /** 是否限免：游客与普通用户可读 */
+  is_free: boolean;
   sort: number;
 }
 
@@ -55,6 +57,7 @@ export const DEMO_NOTES: DemoNote[] = [
     cover: null,
     description: "从渲染管线到 Draw Call 的移动端优化顺序，以及可量化的验收指标。",
     categoryName: "UE5",
+    is_free: true,
     sort: 1,
   },
   {
@@ -81,6 +84,7 @@ export const DEMO_NOTES: DemoNote[] = [
     cover: null,
     description: "Nanite 与 Lumen 在 PC 与移动端的可用性差异，以及项目层面的取舍依据。",
     categoryName: "UE5",
+    is_free: false,
     sort: 2,
   },
   {
@@ -106,6 +110,7 @@ export const DEMO_NOTES: DemoNote[] = [
     cover: null,
     description: "Gameplay Ability System 的核心概念与最小可用组合，附两个常见坑。",
     categoryName: "GAS",
+    is_free: true,
     sort: 3,
   },
   {
@@ -128,6 +133,7 @@ export const DEMO_NOTES: DemoNote[] = [
     cover: null,
     description: "移动端渲染管线的开关项与每帧性能目标，配合优化清单使用。",
     categoryName: "UE5",
+    is_free: false,
     sort: 4,
   },
   {
@@ -148,6 +154,7 @@ export const DEMO_NOTES: DemoNote[] = [
     cover: null,
     description: "引擎资产的命名前缀与目录分层约定，便于团队协作与资源检索。",
     categoryName: "工程规范",
+    is_free: true,
     sort: 5,
   },
 ];

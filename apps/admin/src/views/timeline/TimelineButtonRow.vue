@@ -51,4 +51,19 @@ const url = computed({
 .button-row :deep(.el-button) {
   flex-shrink: 0;
 }
+
+/* 窄屏把两个输入框各占一行，删除按钮右对齐 */
+@media (max-width: 600px) {
+  .button-row {
+    flex-wrap: wrap;
+  }
+
+  .button-row :deep(.el-input) {
+    flex: 1 1 100%;
+  }
+
+  .button-row :deep(.el-button) {
+    margin-left: auto;
+  }
+}
 </style>

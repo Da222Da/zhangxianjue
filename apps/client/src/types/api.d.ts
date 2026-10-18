@@ -22,6 +22,174 @@ export interface ApiResponse<T = unknown> {
   pageSize?: number;
 }
 
+// 认证相关
+/** 当前登录用户（服务端不返回密码） */
+export interface UserProfile {
+  id: number;
+  username: string;
+  /** 手机号（client 登录标识） */
+  phone: string | null;
+  avatar: string;
+  role_id: number;
+  /** 角色名（服务端由关联查出） */
+  role_name: string;
+  /** 角色编码（服务端由关联查出） */
+  role_code: string;
+  /** 会员到期时间；非会员为 null */
+  membership_expires_at: string | null;
+  /** 1 启用 / 0 禁用 */
+  status: number;
+  /** 该角色拥有的权限编码 */
+  permissions: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 图形验证码 */
+export interface CaptchaResult {
+  captchaId: string;
+  /** SVG data URI，可直接放进 <img src> */
+  image: string;
+  /** 有效期（秒） */
+  expiresIn: number;
+}
+
+/**
+ * 登录入参
+ *
+ * `phone` 与 `username` 二选一（client 页面按输入内容自动判断），
+ * client 登录必须携带图形验证码。
+ */
+export interface LoginParams {
+  /** 手机号（与 username 二选一） */
+  phone?: string;
+  /** 用户名（与 phone 二选一） */
+  username?: string;
+  password: string;
+  captchaId: string;
+  captchaCode: string;
+}
+
+/**
+ * 本地开发自动登录入参
+ *
+ * 均可省略：省略账号密码时服务端会使用 server/.env 的 DEV_LOGIN_*。
+ */
+export interface DevLoginParams {
+  phone?: string;
+  username?: string;
+  password?: string;
+}
+
+/** 登录 / 注册成功响应数据 */
+export interface LoginResult {
+  token: string;
+  refreshToken: string;
+  user: UserProfile;
+}
+
+/** 注册入参（手机号 + 图形验证码） */
+export interface RegisterParams {
+  username: string;
+  phone: string;
+  password: string;
+  captchaId: string;
+  captchaCode: string;
+}
+
+/** 忘记密码入参（手机号 + 图形验证码 + 新密码） */
+export interface ForgotPasswordParams {
+  phone: string;
+  password: string;
+  captchaId: string;
+  captchaCode: string;
+}
+
+/** 已登录用户修改密码入参 */
+export interface ChangePasswordParams {
+  oldPassword: string;
+  newPassword: string;
+}
+
+// 书库相关
+/** 书籍标签的简要信息 */
+export interface BookTagRef {
+  id: number;
+  name: string;
+}
+
+/** 书籍列表项 */
+export interface Book {
+  id: number;
+  title: string;
+  cover: string | null;
+  description: string | null;
+  /** 分类 id；null 表示未分类 */
+  category_id: number | null;
+  /** 分类名（服务端由关联查出，只读）；null 表示未分类 */
+  category: string | null;
+  /** 标签列表 */
+  tags: BookTagRef[];
+  /** 是否限免；false 表示 VIP 专属，游客与普通用户无法打开 */
+  is_free: boolean;
+  /** 是否对未登录游客可见；false 时游客在列表与详情中都看不到 */
+  guest_visible: boolean;
+  sort: number;
+  /** 分卷数 */
+  volume_count: number;
+  /** 章节数 */
+  chapter_count: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 分卷元数据 */
+export interface Volume {
+  id: number;
+  book_id: number;
+  title: string;
+  sort: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 分卷及其章节（章节不含正文） */
+export interface VolumeWithChapters extends Volume {
+  chapters: ChapterListItem[];
+}
+
+/** 章节元数据（不含正文） */
+export interface ChapterListItem {
+  id: number;
+  book_id: number;
+  volume_id: number;
+  title: string;
+  summary: string | null;
+  sort: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 书籍详情（含分卷与章节列表） */
+export interface BookDetail extends Book {
+  volumes: VolumeWithChapters[];
+}
+
+/** 章节详情（含 Markdown 正文） */
+export interface ChapterDetail extends ChapterListItem {
+  content: string;
+}
+
+// 会员申请相关
+export type MembershipViewStatus = "none" | "pending" | "approved" | "rejected";
+
+/** 当前用户的会员申请状态 */
+export interface MembershipStatus {
+  status: MembershipViewStatus;
+  appliedAt: string | null;
+  reviewedAt: string | null;
+}
+
 /** 分类树节点：children 递归嵌套 */
 export interface CategoryTreeNode {
   id: number;
@@ -50,6 +218,10 @@ export interface NoteListItem {
   category_id: number | null;
   /** 分类名（服务端由关联查出，只读）；null 表示未分类 */
   category: string | null;
+  /** 是否限免；false 表示 VIP 专属，游客与普通用户无法读取正文 */
+  is_free: boolean;
+  /** 是否对未登录游客可见；false 时游客在列表与详情中都看不到 */
+  guest_visible: boolean;
   /** 排序号，升序；0 表示未排版 */
   sort: number;
   createdAt: string;
@@ -100,6 +272,8 @@ export interface Article {
   note_id: number | null;
   /** 关联笔记标题（服务端由关联查出，只读）；null 表示未关联 */
   note_title: string | null;
+  /** 是否对未登录游客可见；false 时游客在列表与详情中都看不到 */
+  guest_visible: boolean;
   /** 排序号，升序；0 表示未排版 */
   sort: number;
   createdAt: string;

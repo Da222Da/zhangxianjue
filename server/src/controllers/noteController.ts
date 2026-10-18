@@ -5,6 +5,7 @@ import { HttpStatusCode } from "../utils/constants/HttpStatus.ts";
 import { BadRequestError } from "../utils/errors.ts";
 import * as noteService from "../services/noteService.ts";
 import type { NoteListQuery, NoteMetaPayload } from "../services/noteService.ts";
+import { resolveViewerAccess } from "../services/accessService.ts";
 
 /** 校验并转换正整数（用于路径参数与分页参数） */
 const parsePositiveInt = (raw: unknown, field: string): number => {
@@ -77,6 +78,17 @@ const parseOptionalCategoryId = (raw: unknown): number | null | undefined => {
   return parsePositiveInt(raw, "category_id");
 };
 
+/** 校验可选的布尔值：未传入 → undefined（创建时默认 VIP 专属，更新时保持原值） */
+const parseOptionalBoolean = (raw: unknown, field: string): boolean | undefined => {
+  if (raw === undefined) {
+    return undefined;
+  }
+  if (typeof raw !== "boolean") {
+    throw new BadRequestError(`${field} 必须为布尔值`);
+  }
+  return raw;
+};
+
 /**
  * 校验可选的排序号：非负整数
  * 未传入 → undefined（创建时取默认值 0，更新时保持原值）
@@ -141,13 +153,15 @@ const parseNoteMetaPayload = (body: unknown): NoteMetaPayload => {
   if (typeof body !== "object" || body === null || Array.isArray(body)) {
     throw new BadRequestError("请求体必须为 JSON 对象");
   }
-  const { title, cover, description, category_id, sort } = body as Record<string, unknown>;
+  const { title, cover, description, category_id, is_free, guest_visible, sort } = body as Record<string, unknown>;
 
   return {
     title: parseRequiredString(title, "title", noteService.MAX_TITLE_LENGTH),
     cover: parseOptionalText(cover, "cover"),
     description: parseOptionalText(description, "description"),
     category_id: parseOptionalCategoryId(category_id),
+    is_free: parseOptionalBoolean(is_free, "is_free"),
+    guest_visible: parseOptionalBoolean(guest_visible, "guest_visible"),
     sort: parseOptionalSort(sort),
   };
 };
@@ -169,12 +183,13 @@ const parseNoteContentPayload = (body: unknown): string => {
 
 /**
  * GET /api/admin/note
- * 分页查询笔记列表（不含 content）
+ * 分页查询笔记列表（不含 content，公开；返回全部笔记，含 VIP 专属）
  */
 export const getNotes = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const query = parseListQuery(req.query);
-    const { rows, total, currentPage, pageSize } = await noteService.listNotes(query);
+    const access = await resolveViewerAccess(req.body?.user?.id);
+    const { rows, total, currentPage, pageSize } = await noteService.listNotes(query, access.isAuthenticated);
 
     sendApiSuccessResponse(res, HttpStatusCode.OK, rows, "Notes fetched successfully", { total, currentPage, pageSize });
   } catch (error) {
@@ -184,12 +199,13 @@ export const getNotes = async (req: Request, res: Response, next: NextFunction):
 
 /**
  * GET /api/admin/note/:id
- * 查询笔记详情（含 content）
+ * 查询笔记详情（含 content，公开；VIP 专属需 library:view 或 note:manage）
  */
 export const getNoteDetail = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const id = parsePositiveInt(req.params.id, "id");
-    const note = await noteService.getNoteById(id);
+    const access = await resolveViewerAccess(req.body?.user?.id);
+    const note = await noteService.getReadableNoteById(id, access.canSeeRestrictedNotes, access.isAuthenticated);
 
     sendApiSuccessResponse(res, HttpStatusCode.OK, note, "Note fetched successfully");
   } catch (error) {

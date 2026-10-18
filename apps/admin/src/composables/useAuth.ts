@@ -3,8 +3,9 @@ import { ref } from "vue";
 import { useRouter } from "vue-router";
 import type { RouteLocationRaw } from "vue-router";
 import authService from "@/api/authService";
+import { Permissions } from "@/constants/permissions";
 import { useAuthStore } from "@/store/auth";
-import type { LoginParams, User } from "@/types/api";
+import type { DevLoginParams, LoginParams, User } from "@/types/api";
 
 /**
  * 登录成功后的默认落地路由
@@ -43,6 +44,11 @@ export const useAuth = () => {
       authStore.setSession(tokens);
 
       const { data: user } = await authService.getUserInfo();
+      if (!user.permissions.includes(Permissions.ADMIN_ACCESS)) {
+        // 后台登录接口已拦截；这里再兜底一次，防止权限在登录后被收回
+        authStore.clearSession();
+        throw new Error("该账号没有后台访问权限");
+      }
       authStore.setUser(user);
 
       await router.replace(resolveRedirect());
@@ -51,9 +57,39 @@ export const useAuth = () => {
     }
   };
 
-  /** 退出登录：清空会话后回到登录页 */
+  /**
+   * 本地开发自动登录
+   *
+   * 账号密码由 server/.env 提供，前端只负责调用与建立登录态；
+   * 仍会校验 `admin:access`，避免开发接口把普通账号带进后台。
+   */
+  const devAutoLogin = async (params?: DevLoginParams): Promise<void> => {
+    submitting.value = true;
+    try {
+      const tokens = await authService.devLogin(params);
+      authStore.setSession(tokens);
+
+      const { data: user } = await authService.getUserInfo();
+      if (!user.permissions.includes(Permissions.ADMIN_ACCESS)) {
+        authStore.clearSession();
+        throw new Error("该账号没有后台访问权限");
+      }
+      authStore.setUser(user);
+
+      await router.replace(resolveRedirect());
+    } finally {
+      submitting.value = false;
+    }
+  };
+
+  /**
+   * 退出登录：清空会话后回到登录页
+   *
+   * 若本机配置了 .env 自动登录，置一个标记，避免退出后立刻又被自动登录回去。
+   */
   const logout = async (): Promise<void> => {
     authStore.clearSession();
+    sessionStorage.setItem("__dev_skip_auto_login", "1");
     await router.replace({ name: "Login" });
   };
 
@@ -68,6 +104,11 @@ export const useAuth = () => {
     }
     try {
       const { data: user } = await authService.getUserInfo();
+      if (!user.permissions.includes(Permissions.ADMIN_ACCESS)) {
+        // 权限被收回后，已持久化的旧会话也不应继续使用
+        authStore.clearSession();
+        return null;
+      }
       authStore.setUser(user);
       return user;
     } catch {
@@ -76,5 +117,5 @@ export const useAuth = () => {
     }
   };
 
-  return { authStore, submitting, login, logout, loadUser };
+  return { authStore, submitting, login, devAutoLogin, logout, loadUser };
 };

@@ -2,7 +2,8 @@
 import { Router } from "express";
 import { createCategory, deleteCategory, getCategoryTree, updateCategory } from "../controllers/categoryController.ts";
 import { authMiddleware } from "../middlewares/authMiddleware.ts";
-import { adminOnly } from "../middlewares/roleMiddleware.ts";
+import { requirePermission } from "../middlewares/permissionMiddleware.ts";
+import { Permissions } from "../utils/constants/permissions.ts";
 
 const router = Router();
 
@@ -10,7 +11,7 @@ const router = Router();
  * @swagger
  * tags:
  *   name: Category
- *   description: 分类管理接口（树形）。查询公开，创建 / 更新 / 删除需登录且仅管理员
+ *   description: 分类管理接口（树形）。查询公开，创建 / 更新 / 删除需登录且具备 category:manage 权限
  */
 
 /**
@@ -138,7 +139,7 @@ router.get("/", getCategoryTree);
  *   post:
  *     tags: [Category]
  *     summary: 创建分类
- *     description: 需要登录，仅管理员。同级下名称不可重复
+ *     description: 需要登录，且具备 category:manage 权限。同级下名称不可重复
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -179,7 +180,7 @@ router.get("/", getCategoryTree);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post("/", authMiddleware, adminOnly, createCategory);
+router.post("/", authMiddleware, requirePermission(Permissions.CATEGORY_MANAGE), createCategory);
 
 /**
  * @swagger
@@ -188,7 +189,7 @@ router.post("/", authMiddleware, adminOnly, createCategory);
  *     tags: [Category]
  *     summary: 更新分类
  *     description: |
- *       需要登录，仅管理员。可修改名称、父分类与排序。
+ *       需要登录，且具备 category:manage 权限。可修改名称、父分类与排序。
  *       ⚠️ 移动父分类时不允许成环：不能挂到自己或自己的子孙下面。
  *     security:
  *       - bearerAuth: []
@@ -243,7 +244,7 @@ router.post("/", authMiddleware, adminOnly, createCategory);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.put("/:id", authMiddleware, adminOnly, updateCategory);
+router.put("/:id", authMiddleware, requirePermission(Permissions.CATEGORY_MANAGE), updateCategory);
 
 /**
  * @swagger
@@ -252,7 +253,7 @@ router.put("/:id", authMiddleware, adminOnly, updateCategory);
  *     tags: [Category]
  *     summary: 删除分类
  *     description: |
- *       需要登录，仅管理员。
+ *       需要登录，且具备 category:manage 权限。
  *       ⚠️ 存在子分类或仍被文章 / 笔记引用时**拒绝删除**（400），需先移动或清空引用。
  *     security:
  *       - bearerAuth: []
@@ -308,6 +309,6 @@ router.put("/:id", authMiddleware, adminOnly, updateCategory);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.delete("/:id", authMiddleware, adminOnly, deleteCategory);
+router.delete("/:id", authMiddleware, requirePermission(Permissions.CATEGORY_MANAGE), deleteCategory);
 
 export default router;

@@ -34,6 +34,21 @@ app.use("/api", routes);
 // ========== 统一错误处理（放在最后） ==========
 app.use(errorHandler);
 
-app.listen(PORT, () => {
+// ⚠️ 不要把回调传给 app.listen：Express 5 会把回调同时注册成 error 监听器，
+// 端口被占用时 EADDRINUSE 会被当成回调参数吞掉，表现为「打印启动成功、进程静默退出」。
+// 改用 listening / error 两个事件，启动成功与失败互斥且都会如实输出。
+const server = app.listen(PORT);
+
+server.on("listening", () => {
   console.log(`🚀 服务器启动在 http://localhost:${PORT}`);
+});
+
+server.on("error", (error: NodeJS.ErrnoException) => {
+  if (error.code === "EADDRINUSE") {
+    console.error(`❌ 端口 ${PORT} 已被占用，服务器未启动。`);
+    console.error(`   请先停止占用该端口的进程（Windows: netstat -ano | findstr :${PORT}）。`);
+  } else {
+    console.error(`❌ 服务器启动失败：${error.message}`);
+  }
+  process.exitCode = 1;
 });

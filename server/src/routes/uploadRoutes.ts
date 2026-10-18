@@ -3,7 +3,8 @@ import { Router } from "express";
 import { uploadImage } from "../controllers/uploadController.ts";
 import { UPLOAD_FIELD_NAME, uploadSingleImage } from "../middlewares/uploadMiddleware.ts";
 import { authMiddleware } from "../middlewares/authMiddleware.ts";
-import { adminOnly } from "../middlewares/roleMiddleware.ts";
+import { requirePermission } from "../middlewares/permissionMiddleware.ts";
+import { Permissions } from "../utils/constants/permissions.ts";
 
 const router = Router();
 
@@ -85,7 +86,7 @@ const router = Router();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
- *         description: 已登录但角色不足（这些接口仅管理员可调用）
+ *         description: 已登录但缺少 upload:manage 权限
  *         content:
  *           application/json:
  *             schema:
@@ -97,6 +98,6 @@ const router = Router();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post("/", authMiddleware, adminOnly, uploadSingleImage, uploadImage);
+router.post("/", authMiddleware, requirePermission(Permissions.UPLOAD_MANAGE), uploadSingleImage, uploadImage);
 
 export default router;

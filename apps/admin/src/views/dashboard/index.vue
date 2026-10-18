@@ -8,7 +8,6 @@
         <div class="user-details">
           <h2>欢迎, {{ user.username }}!</h2>
           <el-descriptions title="基本信息" :column="1">
-            <el-descriptions-item label="邮箱：">{{ user.email }}</el-descriptions-item>
             <el-descriptions-item label="角色：">{{ getRoleName(user.role_id) }}</el-descriptions-item>
             <el-descriptions-item label="电话：">{{ user.phone }}</el-descriptions-item>
             <el-descriptions-item label="注册时间：">{{ formatDate(user.createdAt) }}</el-descriptions-item>
@@ -70,7 +69,6 @@ import { onMounted } from "vue";
 //   () =>
 //     authStore.user || {
 //       username: "未登录",
-//       email: "未登录",
 //       role_id: 0,
 //       phone: "未登录",
 //       avatar: "",

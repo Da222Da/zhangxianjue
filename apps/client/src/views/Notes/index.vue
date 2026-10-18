@@ -26,6 +26,8 @@
             <div class="card-cover">
               <el-image v-if="item.cover" :src="resolveAssetUrl(item.cover)" fit="cover" lazy class="cover-img" />
               <div v-else class="cover-placeholder">暂无封面</div>
+              <!-- 右上角访问角标：限免 / VIP -->
+              <AccessBadge :is-free="item.is_free" />
             </div>
 
             <div class="card-body">
@@ -55,6 +57,7 @@
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import noteService from "@/api/noteService";
+import AccessBadge from "@/components/AccessBadge.vue";
 import { resolveAssetUrl } from "@/services/apiConfig";
 import { formatDate } from "@/util/index.ts";
 import type { NoteListItem } from "@/types/api";
@@ -193,6 +196,7 @@ onMounted(() => {
 
 .card-cover {
   /* 固定 16:9 并裁切，保证不同尺寸封面在网格里高度一致 */
+  position: relative;
   aspect-ratio: 16 / 9;
   background: var(--code-bg);
 }

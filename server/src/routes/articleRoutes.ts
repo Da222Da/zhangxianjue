@@ -9,7 +9,9 @@ import {
   updateArticleMeta,
 } from "../controllers/articleController.ts";
 import { authMiddleware } from "../middlewares/authMiddleware.ts";
-import { adminOnly } from "../middlewares/roleMiddleware.ts";
+import { optionalAuthMiddleware } from "../middlewares/optionalAuthMiddleware.ts";
+import { requirePermission } from "../middlewares/permissionMiddleware.ts";
+import { Permissions } from "../utils/constants/permissions.ts";
 
 const router = Router();
 
@@ -67,6 +69,10 @@ const router = Router();
  *           nullable: true
  *           description: 关联笔记标题（由关联查出，只读）；未关联为 null
  *           example: Unreal Engine 5 移动端优化清单
+ *         guest_visible:
+ *           type: boolean
+ *           description: 是否对未登录游客可见；false 时游客在列表与详情中都看不到
+ *           example: true
  *         sort:
  *           type: integer
  *           description: 排序号，升序；0 表示未排版
@@ -109,6 +115,10 @@ const router = Router();
  *           nullable: true
  *           description: 关联笔记 id。创建时不传则为未关联；更新时不传则保持原值，传 null 表示解除关联
  *           example: 2
+ *         guest_visible:
+ *           type: boolean
+ *           description: 是否对未登录游客可见。创建时不传默认 true；更新时不传则保持原值
+ *           example: true
  *         sort:
  *           type: integer
  *           minimum: 0
@@ -181,7 +191,11 @@ const router = Router();
  *   get:
  *     tags: [Article]
  *     summary: 分页查询文章列表
- *     description: 支持按关键词模糊匹配标题与正文、按分类筛选（含子分类）。结果按 sort 升序排列，同序号按创建时间倒序。无需登录
+ *     description: |
+ *       支持按关键词模糊匹配标题与正文、按分类筛选（含子分类）。结果按 sort 升序排列，同序号按创建时间倒序。
+ *       未登录游客只返回 guest_visible=true 的文章；携带有效 access token 的登录用户返回全部。
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: keyword
@@ -237,7 +251,7 @@ const router = Router();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get("/", getArticles);
+router.get("/", optionalAuthMiddleware, getArticles);
 
 /**
  * @swagger
@@ -245,7 +259,11 @@ router.get("/", getArticles);
  *   get:
  *     tags: [Article]
  *     summary: 查询文章详情
- *     description: 无需登录
+ *     description: |
+ *       公开访问。游客不可见（guest_visible=false）的文章对未登录请求返回 404；
+ *       携带有效 access token 的登录用户可读取全部文章。
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -281,7 +299,7 @@ router.get("/", getArticles);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get("/:id", getArticleDetail);
+router.get("/:id", optionalAuthMiddleware, getArticleDetail);
 
 /**
  * @swagger
@@ -289,7 +307,7 @@ router.get("/:id", getArticleDetail);
  *   post:
  *     tags: [Article]
  *     summary: 创建文章
- *     description: 需要登录，仅管理员。只创建元数据，content 落库为空串，正文随后通过 PUT /{id}/content 补录
+ *     description: 需要登录，且具备 article:manage 权限。只创建元数据，content 落库为空串，正文随后通过 PUT /{id}/content 补录
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -318,7 +336,7 @@ router.get("/:id", getArticleDetail);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
- *         description: 已登录但角色不足（这些接口仅管理员可调用）
+ *         description: 已登录但缺少 article:manage 权限
  *         content:
  *           application/json:
  *             schema:
@@ -330,7 +348,7 @@ router.get("/:id", getArticleDetail);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post("/", authMiddleware, adminOnly, createArticle);
+router.post("/", authMiddleware, requirePermission(Permissions.ARTICLE_MANAGE), createArticle);
 
 /**
  * @swagger
@@ -338,7 +356,7 @@ router.post("/", authMiddleware, adminOnly, createArticle);
  *   put:
  *     tags: [Article]
  *     summary: 更新文章元数据
- *     description: 需要登录，仅管理员。**不触碰 content**。cover / description / category_id / note_id / sort 未传入时保持原值不变
+ *     description: 需要登录，且具备 article:manage 权限。**不触碰 content**。cover / description / category_id / note_id / sort 未传入时保持原值不变
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -376,7 +394,7 @@ router.post("/", authMiddleware, adminOnly, createArticle);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
- *         description: 已登录但角色不足（这些接口仅管理员可调用）
+ *         description: 已登录但缺少 article:manage 权限
  *         content:
  *           application/json:
  *             schema:
@@ -394,7 +412,7 @@ router.post("/", authMiddleware, adminOnly, createArticle);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.put("/:id", authMiddleware, adminOnly, updateArticleMeta);
+router.put("/:id", authMiddleware, requirePermission(Permissions.ARTICLE_MANAGE), updateArticleMeta);
 
 /**
  * @swagger
@@ -402,7 +420,7 @@ router.put("/:id", authMiddleware, adminOnly, updateArticleMeta);
  *   put:
  *     tags: [Article]
  *     summary: 更新文章正文
- *     description: 需要登录，仅管理员。只更新 content，请求体中的其它字段一律忽略。传空串表示清空正文
+ *     description: 需要登录，且具备 article:manage 权限。只更新 content，请求体中的其它字段一律忽略。传空串表示清空正文
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -440,7 +458,7 @@ router.put("/:id", authMiddleware, adminOnly, updateArticleMeta);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
- *         description: 已登录但角色不足（这些接口仅管理员可调用）
+ *         description: 已登录但缺少 article:manage 权限
  *         content:
  *           application/json:
  *             schema:
@@ -459,7 +477,7 @@ router.put("/:id", authMiddleware, adminOnly, updateArticleMeta);
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 // ⚠️ 与 /:id 是两条不同的路径模板（多一段 content），不存在匹配冲突，顺序无关
-router.put("/:id/content", authMiddleware, adminOnly, updateArticleContent);
+router.put("/:id/content", authMiddleware, requirePermission(Permissions.ARTICLE_MANAGE), updateArticleContent);
 
 /**
  * @swagger
@@ -506,7 +524,7 @@ router.put("/:id/content", authMiddleware, adminOnly, updateArticleContent);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
- *         description: 已登录但角色不足（这些接口仅管理员可调用）
+ *         description: 已登录但缺少 article:manage 权限
  *         content:
  *           application/json:
  *             schema:
@@ -524,6 +542,6 @@ router.put("/:id/content", authMiddleware, adminOnly, updateArticleContent);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.delete("/:id", authMiddleware, adminOnly, deleteArticle);
+router.delete("/:id", authMiddleware, requirePermission(Permissions.ARTICLE_MANAGE), deleteArticle);
 
 export default router;

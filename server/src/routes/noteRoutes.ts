@@ -2,7 +2,9 @@
 import { Router } from "express";
 import { createNote, deleteNote, getNoteDetail, getNotes, updateNoteContent, updateNoteMeta } from "../controllers/noteController.ts";
 import { authMiddleware } from "../middlewares/authMiddleware.ts";
-import { adminOnly } from "../middlewares/roleMiddleware.ts";
+import { optionalAuthMiddleware } from "../middlewares/optionalAuthMiddleware.ts";
+import { requirePermission } from "../middlewares/permissionMiddleware.ts";
+import { Permissions } from "../utils/constants/permissions.ts";
 
 const router = Router();
 
@@ -10,7 +12,10 @@ const router = Router();
  * @swagger
  * tags:
  *   name: Note
- *   description: 笔记管理接口。正文为思维导图（markmap 的 Markdown 文本）。列表与详情公开访问，创建 / 更新 / 删除需登录
+ *   description: |
+ *     笔记管理接口。正文为思维导图（markmap 的 Markdown 文本）。
+ *     列表与限免笔记公开访问；VIP 专属笔记的详情要求 library:view 或 note:manage。
+ *     创建 / 更新 / 删除需登录且具备 note:manage。
  */
 
 /**
@@ -51,6 +56,14 @@ const router = Router();
  *           nullable: true
  *           description: 分类名（由关联查出，只读）；未分类为 null
  *           example: UE5
+ *         is_free:
+ *           type: boolean
+ *           description: 是否限免；false 表示 VIP 专属，游客与普通用户无法读取正文
+ *           example: false
+ *         guest_visible:
+ *           type: boolean
+ *           description: 是否对未登录游客可见；false 时游客在列表与详情中都看不到
+ *           example: true
  *         sort:
  *           type: integer
  *           description: 排序号，升序；0 表示未排版
@@ -88,6 +101,14 @@ const router = Router();
  *           nullable: true
  *           description: 分类 id。创建时不传则为未分类；更新时不传则保持原值，传 null 表示移到未分类
  *           example: 2
+ *         is_free:
+ *           type: boolean
+ *           description: 是否限免。创建时不传默认 false；更新时不传则保持原值
+ *           example: true
+ *         guest_visible:
+ *           type: boolean
+ *           description: 是否对未登录游客可见。创建时不传默认 true；更新时不传则保持原值
+ *           example: true
  *         sort:
  *           type: integer
  *           minimum: 0
@@ -148,7 +169,11 @@ const router = Router();
  *     summary: 分页查询笔记列表
  *     description: |
  *       支持按关键词模糊匹配标题、描述与正文、按分类筛选（含子分类）。结果按 sort 升序排列，同序号按创建时间倒序。
- *       ⚠️ 列表**不返回 content 字段**（思维导图正文体积较大，卡片页与表格页均不需要），需要正文请调用详情接口。无需登录
+ *       ⚠️ 列表**不返回 content 字段**（思维导图正文体积较大，卡片页与表格页均不需要），需要正文请调用详情接口。
+ *       未登录游客只返回 guest_visible=true 的笔记；携带有效 access token 的登录用户返回全部
+ *       （含 VIP 专属），前端按 `is_free` 显示「限免 / VIP」角标。正文拦截发生在详情接口。
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: keyword
@@ -204,7 +229,7 @@ const router = Router();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get("/", getNotes);
+router.get("/", optionalAuthMiddleware, getNotes);
 
 /**
  * @swagger
@@ -212,7 +237,12 @@ router.get("/", getNotes);
  *   get:
  *     tags: [Note]
  *     summary: 查询笔记详情
- *     description: 返回含 content 的完整实体，供思维导图渲染与内容编辑器读取。无需登录
+ *     description: |
+ *       返回含 content 的完整实体，供思维导图渲染与内容编辑器读取。
+ *       公开访问。游客不可见（guest_visible=false）的笔记对未登录请求返回 404；
+ *       VIP 专属笔记（is_free=false）需要携带有效 access token 且具备 library:view / note:manage。
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -235,6 +265,12 @@ router.get("/", getNotes);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: 笔记为 VIP 专属，当前访客无阅读权益
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: 笔记不存在
  *         content:
@@ -248,7 +284,7 @@ router.get("/", getNotes);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get("/:id", getNoteDetail);
+router.get("/:id", optionalAuthMiddleware, getNoteDetail);
 
 /**
  * @swagger
@@ -256,7 +292,7 @@ router.get("/:id", getNoteDetail);
  *   post:
  *     tags: [Note]
  *     summary: 创建笔记
- *     description: 需要登录，仅管理员。只创建元数据，content 落库为空串，正文随后通过 PUT /{id}/content 补录
+ *     description: 需要登录，且具备 note:manage 权限。只创建元数据，content 落库为空串，正文随后通过 PUT /{id}/content 补录
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -285,7 +321,7 @@ router.get("/:id", getNoteDetail);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
- *         description: 已登录但角色不足（这些接口仅管理员可调用）
+ *         description: 已登录但缺少 note:manage 权限
  *         content:
  *           application/json:
  *             schema:
@@ -297,7 +333,7 @@ router.get("/:id", getNoteDetail);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post("/", authMiddleware, adminOnly, createNote);
+router.post("/", authMiddleware, requirePermission(Permissions.NOTE_MANAGE), createNote);
 
 /**
  * @swagger
@@ -305,7 +341,7 @@ router.post("/", authMiddleware, adminOnly, createNote);
  *   put:
  *     tags: [Note]
  *     summary: 更新笔记元数据
- *     description: 需要登录，仅管理员。**不触碰 content**。cover / description / category / sort 未传入时保持原值不变
+ *     description: 需要登录，且具备 note:manage 权限。**不触碰 content**。cover / description / category / sort 未传入时保持原值不变
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -343,7 +379,7 @@ router.post("/", authMiddleware, adminOnly, createNote);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
- *         description: 已登录但角色不足（这些接口仅管理员可调用）
+ *         description: 已登录但缺少 note:manage 权限
  *         content:
  *           application/json:
  *             schema:
@@ -361,7 +397,7 @@ router.post("/", authMiddleware, adminOnly, createNote);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.put("/:id", authMiddleware, adminOnly, updateNoteMeta);
+router.put("/:id", authMiddleware, requirePermission(Permissions.NOTE_MANAGE), updateNoteMeta);
 
 /**
  * @swagger
@@ -369,7 +405,7 @@ router.put("/:id", authMiddleware, adminOnly, updateNoteMeta);
  *   put:
  *     tags: [Note]
  *     summary: 更新笔记正文
- *     description: 需要登录，仅管理员。只更新 content，请求体中的其它字段一律忽略。传空串表示清空正文
+ *     description: 需要登录，且具备 note:manage 权限。只更新 content，请求体中的其它字段一律忽略。传空串表示清空正文
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -407,7 +443,7 @@ router.put("/:id", authMiddleware, adminOnly, updateNoteMeta);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
- *         description: 已登录但角色不足（这些接口仅管理员可调用）
+ *         description: 已登录但缺少 note:manage 权限
  *         content:
  *           application/json:
  *             schema:
@@ -426,7 +462,7 @@ router.put("/:id", authMiddleware, adminOnly, updateNoteMeta);
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 // ⚠️ 与 /:id 是两条不同的路径模板（多一段 content），不存在匹配冲突，顺序无关
-router.put("/:id/content", authMiddleware, adminOnly, updateNoteContent);
+router.put("/:id/content", authMiddleware, requirePermission(Permissions.NOTE_MANAGE), updateNoteContent);
 
 /**
  * @swagger
@@ -434,7 +470,7 @@ router.put("/:id/content", authMiddleware, adminOnly, updateNoteContent);
  *   delete:
  *     tags: [Note]
  *     summary: 删除笔记
- *     description: 需要登录，仅管理员。删除成功时响应体不含 data 字段
+ *     description: 需要登录，且具备 note:manage 权限。删除成功时响应体不含 data 字段
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -473,7 +509,7 @@ router.put("/:id/content", authMiddleware, adminOnly, updateNoteContent);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
- *         description: 已登录但角色不足（这些接口仅管理员可调用）
+ *         description: 已登录但缺少 note:manage 权限
  *         content:
  *           application/json:
  *             schema:
@@ -491,6 +527,6 @@ router.put("/:id/content", authMiddleware, adminOnly, updateNoteContent);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.delete("/:id", authMiddleware, adminOnly, deleteNote);
+router.delete("/:id", authMiddleware, requirePermission(Permissions.NOTE_MANAGE), deleteNote);
 
 export default router;

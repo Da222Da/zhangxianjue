@@ -1,6 +1,6 @@
 # client —— 前台展示端
 
-Vue 3 + TypeScript + Vite + Element Plus。面向公众的展示端：时间轴首页、攻略笔记卡片墙（思维导图）与文章详情（markdown）。
+Vue 3 + TypeScript + Vite + Element Plus + Pinia。面向公众的展示端：时间轴首页、攻略笔记卡片墙（思维导图）、文章详情（markdown）、书库（书籍列表 + 分卷章节阅读），以及手机号登录注册、找回密码、个人中心与移动端响应式导航。
 
 ## 启动
 
@@ -8,19 +8,104 @@ Vue 3 + TypeScript + Vite + Element Plus。面向公众的展示端：时间轴�
 npm run dev:client       # 仓库根目录
 ```
 
-**需要后端在 3000 端口运行**（`npm run dev:server`）。客户端的读接口是公开的，无需登录。
+**需要后端在 3000 端口运行**（`npm run dev:server`）。大部分读接口是公开的；
+书库列表与笔记列表游客也能看，但「VIP」标记的正文与个人中心需要登录 / 对应权益。
+
+演示账号（`db:seed:all` 写入，统一密码 `abc123456`）：
+
+| 手机号 | 用户名 | 角色 | 阅读 VIP 内容 |
+| :--- | :--- | :--- | :--- |
+| `13800000001` | 会员小雨 | 会员 | ✅ |
+| `13800000002` | 朋友阿星 | 朋友 | ✅ |
+| `13800000003` | 普通小林 | 普通用户 | ❌（限免内容可读，可申请会员） |
 
 ## 路由
 
 | 路径            | 名称            | 说明                                             |
 | :-------------- | :-------------- | :----------------------------------------------- |
 | `/`             | —               | 重定向到 `/timeline`                             |
+| `/login`        | Login           | **手机号登录**：独立整页卡片，图形验证码          |
+| `/register`     | Register        | **注册**：手机号 + 图形验证码，成功即登录         |
+| `/forgot-password` | ForgotPassword | **找回密码**：手机号 + 图形验证码 + 新密码      |
+| `/account`      | Account         | **个人中心**：账号信息 / 修改密码 / 会员申请（需登录） |
+| `/library`      | Library         | **书库**：书籍卡片墙（公开；VIP 书籍只展示卡片）  |
+| `/library/:id`  | LibraryDetail   | **书籍阅读**：分卷章节导航 + Markdown 正文（限免公开，VIP 需 `library:view`） |
 | `/timeline`     | Timeline        | **时间轴**：纵向、以年为单元的事件轴              |
 | `/home`         | —               | 旧首页路径，重定向到 `/timeline`（兼容旧书签）   |
 | `/notes`        | Notes           | **攻略笔记卡片墙**：卡片网格，点击进入详情        |
 | `/notes/:id`    | NotesDetail     | **笔记详情**：只读渲染思维导图（markmap） |
 | `/articles`     | ArticlesLibrary | **文章库**：搜索框 + 分类标签 + 结果列表            |
 | `/articles/:id` | ArticlesDetail  | **文章详情**：只读渲染 markdown 正文              |
+
+### 登录 / 注册 / 找回密码
+
+页头右侧是账号入口（桌面端显示「登录 / 注册」，登录后变成头像 + 用户名下拉）：
+
+- **手机号或用户名 + 密码 + 图形验证码**登录；注册使用「用户名 + 手机号 + 密码 + 图形验证码」。
+- 登录框只有一个「手机号 / 用户名」输入：
+  - 输入符合大陆手机号格式（`1[3-9]` 开头、11 位）→ 按 `phone` 提交；
+  - 其它内容 → 按 `username` 提交；
+  - 纯数字但不是合法手机号时直接提示「手机号格式不正确」，避免被当成用户名去试。
+- 管理员账号已绑定手机号 `15826653490`，可用手机号或用户名登录 client；
+  走正常页面登录时仍需要图形验证码（自动登录走下面的开发接口）。
+- **本地开发自动登录**：`apps/client/.env` 设置 `VITE_DEV_AUTO_LOGIN=true`，
+  并填入 `VITE_DEV_AUTO_LOGIN_PHONE` + `VITE_DEV_AUTO_LOGIN_PASSWORD`
+  （也可留空，回退到 server/.env 的 `DEV_LOGIN_*`）。开发模式下打开登录页会自动登录。
+  它调用 `/api/auth/dev/login`，接口只在本机回环地址可用，生产构建不会触发。
+  退出登录后本次标签页不再自动登录。`.env` 已被 gitignore，**不要用于生产构建**。
+- 图形验证码由 `GET /api/auth/captcha` 签发，`CaptchaField.vue` 只负责展示与输入；
+  一次性的，提交失败后会自动换一张。
+- 注册成功**直接建立会话**（服务端同时返回双令牌），不需要再登录一次。
+- 找回密码走「手机号 + 图形验证码 + 新密码」；⚠️ 当前只靠图形验证码校验身份，
+  仅适合演示环境，生产必须追加短信或其它二次验证。
+- 登录 / 注册 / 找回密码都是**独立整页**（不套 `Layout`），切页时保留 `?redirect=`。
+- 登录成功后跳回 `?redirect=` 指向的站内路径，缺省回 `/timeline`。
+- ⚠️ `?redirect=` 只接受以单个 `/` 开头的站内路径，`//evil.com` 这类协议相对地址会被拒绝。
+- 页头在移动端只保留汉堡按钮，导航与账号操作收进右侧抽屉。
+- 登录态由 Pinia `store/auth.ts` 持久化（`pinia-plugin-persistedstate`），刷新页面保持登录。
+- `services/axiosInstance.ts` 负责注入 `Authorization`、401 静默刷新与错误形态统一；
+  ⚠️ client 的页面是公开的，令牌失效时**只清理会话、不强制跳登录页**，不打断阅读。
+
+### 个人中心与会员
+
+`/account`（需登录）包含三块：
+
+| 区块 | 说明 |
+| :--- | :--- |
+| 账号信息 | 用户名、角色、手机号、会员到期、注册时间 |
+| 会员与阅读权益 | 会员 / 管理员可直接阅读全部 VIP 内容；普通用户可**申请升级为会员**；待审核 / 被拒绝各有对应文案 |
+| 修改密码 | 旧密码 + 新密码 + 确认，调用 `PUT /api/auth/password` |
+
+- 会员申请提交后在 `MembershipApplications` 里进入 `pending`，由 admin 的「会员申请」页审核。
+- 审核通过后角色变成 `member`，默认有效期 **1 年**，获得 `library:view`（VIP 阅读权益）；
+  个人中心会显示到期时间。到期后服务端自动降级为普通用户，可重新提交申请。
+- 管理员账号本身无需申请（也不能被降级成会员）。
+
+### 书库
+
+- `/library`：书籍卡片墙，展示封面 / 分类 / 标签 / 分卷数 / 章节数与简介；封面为空时使用手绘占位。
+  未登录游客只会收到 `guest_visible=true` 的书籍；登录后可见全部书籍。
+  标题下方是**分类单选按钮**：选项从当前书籍列表归纳（只显示真实存在的分类，有未分类书籍时补「未分类」），
+  并额外提供「全部」；筛选在客户端完成，不额外请求接口。
+  封面右上角有 `AccessBadge`：`is_free=true` 显示橙色「限免」，否则显示金色「VIP」。
+- `/library/:id`：左侧「COURSE EXPLORER」展示章节（`00`、`01`… 全局编号），右侧章节正文：
+  - 只有 1 个分卷时不显示卷名，章节平铺；分卷数 > 1 时才按「卷名 → 章节」分组，卷名同时出现在顶部「分卷名 · 第 X / N 节」；
+  - 顶部显示第 X / N 节与进度条，绿色「本节内容」面板展示章节导读，正文用
+    `@zhangxianjue/markdown` 只读渲染（`toc-mode="off"`，导航交给章节列表）。
+- 上一节 / 下一节按跨分卷展平后的顺序移动；当前章节同步到 `?chapter=`，刷新页面、分享链接都能停在同一节。
+- **访问控制**：书库列表公开，登录后能看到全部卡片；限免书籍正文公开，
+  VIP 书籍的详情 / 章节由服务端返回 403，页面展示「本书为 VIP 专属」并提供会员申请入口。
+- **游客可见**：`guest_visible=false` 的书籍 / 笔记 / 文章对未登录游客隐藏（列表不返回、详情 404）；
+  登录后的普通用户即可正常看到，不需要是会员。
+  `library:view` 分配给会员 / 朋友 / 管理员。
+- ⚠️ 前端只负责展示与引导，真正的拦截在服务端；游客直接访问 VIP 书籍链接同样会被拒绝。
+- 移动端：书籍卡片单列；阅读页的章节导航变成顶部的可滚动列表，正文在下方。
+
+### 移动端响应式
+
+- 页头断点 `768px`：隐藏主导航与桌面账号入口，显示汉堡按钮；抽屉从右侧滑入，锁定页面滚动，支持 Esc 关闭。
+- 内容区 `Layout` 在窄屏收窄内边距；卡片网格、时间轴、文章库已有各自的 `auto-fill` / 媒体查询。
+- 文章详情在 `≤768px` 时**默认收起悬浮目录**，避免 240px 宽的浮层盖住正文。
 
 ### 面包屑
 
@@ -190,13 +275,19 @@ npm run dev:client       # 仓库根目录
 
 ```bash
 src
-├── api             # 接口层：timelineService、articleService、noteService、categoryService
-├── components      # 组件层：Header、Layout、Breadcrumb
-├── router
-├── services        # 请求基础设施：apiConfig / apiError / http
+├── api             # 接口层：timelineService、articleService、noteService、categoryService、
+│                   #         authService、captchaService、bookService、membershipService
+├── components      # 组件层：Header（含移动端抽屉）、Layout、Breadcrumb、AuthShell、CaptchaField
+├── composables     # 组合式层：useAuth（登录 / 注册 / 找回 / 改密）、useCaptcha、useMembership
+├── constants       # 权限编码（与 server 保持一致）
+├── router          # 路由与守卫（登录要求 / 权限不足跳个人中心）
+├── services        # 请求基础设施：apiConfig / apiError / axiosInstance / http
+├── store           # 状态层：auth（只存状态，不发请求，持久化到 localStorage）
 ├── types           # 类型声明
 ├── util            # 纯函数：formatDate、addParentToMarkdownLinks
-└── views           # 视图层：Timeline、Notes（卡片墙）、NotesDetail（思维导图）、ArticlesLibrary、Articles（详情）
+└── views           # 视图层：Timeline、Notes（卡片墙）、NotesDetail（思维导图）、
+                    #         ArticlesLibrary、Articles（详情）、Library、LibraryDetail、
+                    #         Account、Auth（Login / Register / ForgotPassword）
 ```
 
 ## 数据来源
@@ -205,6 +296,18 @@ src
 
 | 用途         | 接口                                 |
 | :----------- | :----------------------------------- |
+| 图形验证码   | `GET /api/auth/captcha`              |
+| 登录         | `POST /api/auth/login`               |
+| 注册         | `POST /api/auth/register`            |
+| 找回密码     | `POST /api/auth/password/forgot`     |
+| 修改密码     | `PUT /api/auth/password`             |
+| 当前用户     | `GET /api/auth/getUserInfo`          |
+| 刷新令牌     | `POST /api/auth/refresh`             |
+| 会员申请     | `POST /api/membership/apply`         |
+| 申请状态     | `GET /api/membership/status`         |
+| 书库列表     | `GET /api/library/book`（游客自动过滤 `guest_visible=false`） |
+| 书籍详情     | `GET /api/library/book/:id`          |
+| 章节正文     | `GET /api/library/book/:bookId/chapter/:chapterId` |
 | 时间轴       | `GET /api/admin/timeline`            |
 | 文章列表     | `GET /api/admin/article`             |
 | 分类树       | `GET /api/admin/category`            |
@@ -219,11 +322,15 @@ src
 > 因此列表项的类型是 `NoteListItem` 而非 `Note`，类型系统会拦住「在列表里读正文」的写法；
 > 正文由详情页按 id 单独拉取。
 
+> 笔记与书籍一样带 `is_free`：列表返回全部笔记（含 VIP 专属），详情页对 VIP 笔记要求
+> `library:view` 或 `note:manage`，否则展示「这篇笔记为 VIP 专属」的升级引导。
+> 文章没有此限制，默认对所有人可见。
+
 ## 攻略笔记卡片墙
 
 布局参考 cppgamedev.top/mainline：页头（绿色小方块 + 小字标签 + 大标题 + 副标题）+
-自适应卡片网格。卡片自上而下是 16:9 封面、`01 / 攻略笔记` 序号、分类标签、标题、
-三行截断的描述，底部一条分隔线，左「更新于」右「查看笔记 →」。
+自适应卡片网格。卡片自上而下是 16:9 封面（右上角有「限免 / VIP」角标）、`01 / 攻略笔记` 序号、
+分类标签、标题、三行截断的描述，底部一条分隔线，左「更新于」右「查看笔记 →」。
 
 - 网格用 `repeat(auto-fill, minmax(260px, 1fr))`，列数随容器宽度自适应，无需 media query。
   client 的 `Layout.vue` 把页面放在 `el-col :sm="16"`（2/3 宽）里，所以列数不能写死。

@@ -3,6 +3,15 @@
   <el-main>
     <!-- 顶部操作栏：更新作用于表格中选中的那一行 -->
     <div class="header-actions">
+      <el-input
+        v-model="keyword"
+        class="keyword-input"
+        placeholder="搜索标题 / 正文"
+        clearable
+        @keyup.enter="fetchArticles"
+        @clear="fetchArticles"
+      />
+      <el-button type="primary" size="small" @click="fetchArticles">搜索</el-button>
       <el-tree-select
         v-model="categoryId"
         class="category-filter"
@@ -17,14 +26,22 @@
       />
       <el-button type="primary" size="small" @click="openMetaDialog('add')">新增</el-button>
       <el-button type="primary" size="small" @click="openMetaDialog('edit')">更新</el-button>
+      <el-button v-if="canManageCategories" size="small" @click="categoryDialogVisible = true">分类管理</el-button>
     </div>
 
     <!-- row-key 让数据刷新后尽量保住当前高亮行 -->
     <el-table :data="articles" row-key="id" stripe border highlight-current-row style="width: 100%" @current-change="handleCurrentChange">
-      <el-table-column label="操作" align="center" min-width="150" fixed="left">
+      <!-- 行首 radio 与行点击共用 currentRow，作为「更新」的作用对象 -->
+      <el-table-column label="选中" width="64" align="center" fixed="left">
+        <template #default="{ row }">
+          <el-radio :model-value="currentRow?.id" :value="row.id" @change="handleCurrentChange(row)" />
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" align="center" min-width="210" fixed="left">
         <template #default="{ row }">
           <div class="action-buttons">
             <el-button link type="primary" size="small" @click="openContentDialog(row)">编辑内容</el-button>
+            <el-button link type="primary" size="small" @click="copyAppAddress(row)">复制应用地址</el-button>
             <el-button link type="danger" size="small" @click="deleteArticle(row)">删除</el-button>
           </div>
         </template>
@@ -56,12 +73,21 @@
           <span v-else class="empty-cell">—</span>
         </template>
       </el-table-column>
+      <el-table-column label="游客" width="90" align="center">
+        <template #default="{ row }">
+          <el-tag v-if="row.guest_visible" size="small" type="success">可见</el-tag>
+          <el-tag v-else size="small" type="info">隐藏</el-tag>
+        </template>
+      </el-table-column>
       <el-table-column prop="sort" label="排序" width="80" align="center" />
       <el-table-column prop="createdAt" label="创建时间" width="180" />
       <el-table-column prop="updatedAt" label="更新时间" width="180" />
     </el-table>
 
-    <p class="table-hint">表格中选中一行后，点顶部的「更新」可修改它的封面 / 标题 / 描述 / 分类 / 关联笔记 / 排序；正文请走操作列的「编辑内容」。</p>
+    <p class="table-hint">
+      顶部搜索框按标题 / 正文模糊匹配，可与分类筛选叠加。表格中选中一行（或点行首 radio）后，点顶部的「更新」可修改它的封面 / 标题 / 描述 / 分类 / 关联笔记 / 排序；正文请走操作列的「编辑内容」。「复制应用地址」复制的是带标题的
+      Markdown 链接，如 `[标题](/articles/{id})`，可直接粘进正文。
+    </p>
   </el-main>
 
   <ArticleMetaDialog
@@ -74,17 +100,24 @@
     @update="refresh"
   />
   <ArticleContentDialog :modelValue="contentDialogVisible" :article-id="contentArticleId" :article-title="contentArticleTitle" @close="contentDialogVisible = false" @update="refresh" />
+  <CategoryManageDialog :model-value="categoryDialogVisible" @close="categoryDialogVisible = false" @change="refresh" />
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive, onMounted } from "vue";
+import { computed, ref, reactive, onMounted } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import articleService from "@/api/articleService";
 import categoryService from "@/api/categoryService";
 import noteService from "@/api/noteService";
+import { clientRoutes } from "@/constants/clientRoutes";
+import { Permissions } from "@/constants/permissions";
 import { resolveAssetUrl } from "@/services/apiConfig";
+import { useAuthStore } from "@/store/auth";
+import { copyText } from "@/util/clipboard";
+import { formatMarkdownLink } from "@/util/markdown";
 import ArticleMetaDialog from "./ArticleMetaDialog.vue";
 import ArticleContentDialog from "./ArticleContentDialog.vue";
+import CategoryManageDialog from "@/views/categories/CategoryManageDialog.vue";
 import type { Article, ArticleDraft, CategoryTreeNode, NoteListItem } from "@/types/api";
 
 type MetaDialogType = "add" | "edit";
@@ -97,10 +130,17 @@ const emptyDraft = (): ArticleDraft => ({
   description: null,
   category_id: null,
   note_id: null,
+  guest_visible: true,
   sort: 0,
 });
 
+const authStore = useAuthStore();
+/** 分类管理按钮与 API 都要求 category:manage */
+const canManageCategories = computed(() => authStore.hasPermission(Permissions.CATEGORY_MANAGE));
+
 const articles = ref<Article[]>([]);
+/** 搜索关键词；服务端按标题 / 正文做 LIKE 模糊匹配 */
+const keyword = ref("");
 const categoryTree = ref<CategoryTreeNode[]>([]);
 /** 可关联的笔记，供元数据弹窗的下拉使用 */
 const noteOptions = ref<NoteListItem[]>([]);
@@ -117,10 +157,13 @@ const contentDialogVisible = ref(false);
 const contentArticleId = ref<number | null>(null);
 const contentArticleTitle = ref<string>("");
 
+const categoryDialogVisible = ref(false);
+
 // 获取文章列表
 const fetchArticles = async (): Promise<void> => {
   try {
     const res = await articleService.getArticle({
+      keyword: keyword.value.trim() || undefined,
       category_id: categoryId.value ?? undefined,
     });
     articles.value = res.data;
@@ -147,13 +190,15 @@ const fetchCategoryTree = async (): Promise<void> => {
 };
 
 // 获取可关联的笔记（列表不含正文，足够下拉展示）
-// 失败时降级为空列表；已关联的 note_id 在弹窗里会退化成显示数字 id
+// 失败时保留上一次的结果；若从未加载成功过则明确提示，避免下拉静默为空
 const fetchNoteOptions = async (): Promise<void> => {
   try {
     const res = await noteService.getNote({ pageSize: 100 });
     noteOptions.value = res.data;
-  } catch {
-    noteOptions.value = [];
+  } catch (error) {
+    if (noteOptions.value.length === 0) {
+      ElMessage.error(error instanceof Error ? error.message : "关联笔记加载失败");
+    }
   }
 };
 
@@ -184,6 +229,9 @@ const openMetaDialog = (type: MetaDialogType): void => {
 
   metaDialogType.value = type;
   metaDialogVisible.value = true;
+
+  // 笔记可能在别处刚新增或改过名，打开弹窗前再拉一次，避免下拉停留在旧快照
+  void fetchNoteOptions();
 };
 
 /** 打开内容弹窗：只传主键，正文由弹窗自己拉取最新值 */
@@ -191,6 +239,17 @@ const openContentDialog = (row: Article): void => {
   contentArticleId.value = row.id;
   contentArticleTitle.value = row.title;
   contentDialogVisible.value = true;
+};
+
+/** 复制带标题的 Markdown 链接，可直接粘进正文 */
+const copyAppAddress = async (row: Article): Promise<void> => {
+  const link = formatMarkdownLink(row.title, clientRoutes.article(row.id));
+  try {
+    await copyText(link);
+    ElMessage.success(`已复制应用地址：${link}`);
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : "复制失败，请手动复制");
+  }
 };
 
 const deleteArticle = async (row: Article): Promise<void> => {
@@ -226,10 +285,14 @@ onMounted(() => {
 <style scoped>
 .header-actions {
   display: flex;
-  justify-content: flex-end;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   margin-bottom: 16px;
+}
+
+.keyword-input {
+  width: 240px;
 }
 
 .category-filter {
