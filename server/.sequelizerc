@@ -1,8 +1,8 @@
 const path = require("path");
 
 module.exports = {
-  // 指定数据库配置文件路径
-  config: path.resolve("src", "config", "config.json"),
+  // 指定数据库配置文件路径（config.cjs 读取 config.json 并支持 DB_* 环境变量覆盖）
+  config: path.resolve("src", "config", "config.cjs"),
 
   // 指定迁移文件存放路径
   "migrations-path": path.resolve("src", "migrations"),

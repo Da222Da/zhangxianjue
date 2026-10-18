@@ -7,13 +7,25 @@ import type { SignOptions } from "jsonwebtoken";
 // ESM 会在求值调用方之前先执行其依赖模块，因此把 dotenv.config() 收敛到这里，
 // 即可保证 process.env 的填充早于 connection.ts 等模块的读取时机。
 // 注意：dotenv 以 process.cwd() 为基准查找 .env，请确保从 server 目录启动（npm run dev -w server）。
-dotenv.config();
+dotenv.config({ quiet: true });
 
 /** 服务监听端口，未配置时回退 3000 */
 export const PORT: number = Number(process.env.PORT) || 3000;
 
 /** 运行环境，决定 src/config/config.json 读取哪一组数据库配置 */
 export const NODE_ENV: string = process.env.NODE_ENV || "development";
+
+/**
+ * 生产数据库环境变量
+ *
+ * 设置了 DB_NAME 时，连接配置会覆盖 config.json 中对应环境的同名字段。
+ * 这样生产密码只存在于 server/.env（已被 gitignore），无需改入库的 config.json。
+ */
+export const DB_HOST: string = process.env.DB_HOST?.trim() || "";
+export const DB_PORT: number = Number(process.env.DB_PORT) || 0;
+export const DB_NAME: string = process.env.DB_NAME?.trim() || "";
+export const DB_USER: string = process.env.DB_USER?.trim() || "";
+export const DB_PASSWORD: string = process.env.DB_PASSWORD ?? "";
 
 /**
  * 是否启用本地开发自动登录接口

@@ -21,7 +21,7 @@ npm install                       # 根目录安装，workspaces 会处理所有
 
 ```bash
 cp server/.env.example server/.env   # 然后填入 JWT_SECRET
-npx sequelize-cli-ts-js db:migrate   # 在 server 目录执行
+npm run db:migrate -w server
 npm run dev:server                   # http://localhost:3000
 ```
 
@@ -67,6 +67,19 @@ Ctrl+C 会一起停掉三个。只想跑其中一两个，仍可用上面的 `de
 > 因此**以终端实际打印的 Local 地址为准**，别默认还是原来那个端口。
 > 想让端口被占时直接报错（而不是顺延），给对应 `vite.config.ts` 的 `server` 加 `strictPort: true`。
 
+## 一键部署到阿里云 / 宝塔
+
+仓库提供 [`deploy/deploy.sh`](./deploy/deploy.sh)，会完成构建、环境变量、数据库迁移、PM2、Nginx 与健康检查：
+
+```bash
+cp deploy/deploy.env.example deploy/deploy.env
+# 填写域名、数据库、管理员等配置
+sudo bash deploy/deploy.sh
+```
+
+详细步骤（宝塔建站、SSL、已有数据导入、常见问题）见 [`deploy/README.md`](./deploy/README.md)。
+生产数据库通过 `server/.env` 的 `DB_*` 覆盖 `config.json`，不需要把生产密码写进版本库。
+
 ## 常用命令
 
 | 命令                                                    | 作用                        |
@@ -85,6 +98,7 @@ Ctrl+C 会一起停掉三个。只想跑其中一两个，仍可用上面的 `de
 | :-------------------------------------------- | :--------------------------------------------------------- |
 | [`Prompt.md`](./Prompt.md)                    | 开发约定与需求说明：分层职责、代码质量、输出风格、自检清单  |
 | [`server/README.md`](./server/README.md)      | 后端环境变量、迁移、接口与参数约束                          |
+| [`deploy/README.md`](./deploy/README.md)      | 宝塔 + PM2 + MySQL + Nginx 一键部署、SSL、数据迁移          |
 
 **接口契约以 server 的 Swagger（`http://localhost:3000/api-docs`）为唯一权威。**
 要改契约，先改 server（Swagger 注释与 README），再改消费端。

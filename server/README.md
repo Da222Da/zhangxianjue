@@ -6,7 +6,7 @@ zhangxianjue 项目后端服务，基于 Express + Sequelize 提供 REST 接口�
 
 | 类别   | 选型                                                                |
 | :----- | :------------------------------------------------------------------ |
-| 运行时 | Node.js ≥ 22.7（依赖 `--experimental-transform-types` 直接运行 TS） |
+| 运行时 | Node.js ≥ 22.12（依赖 `--experimental-transform-types` 直接运行 TS；部署脚本会校验） |
 | 框架   | Express 5                                                           |
 | 数据库 | MySQL + Sequelize 6 + mysql2                                        |
 | 认证   | jsonwebtoken + bcryptjs                                             |
@@ -18,7 +18,8 @@ zhangxianjue 项目后端服务，基于 Express + Sequelize 提供 REST 接口�
 ```bash
 src
 ├── config          # 配置
-│   ├── config.json    # Sequelize-CLI 数据库配置，按 NODE_ENV 分组
+│   ├── config.json    # 本地数据库配置，按 NODE_ENV 分组
+│   ├── config.cjs     # Sequelize-CLI 配置入口（读取 config.json + DB_* 覆盖）
 │   ├── env.ts         # 环境变量唯一入口，必须最先 import
 │   └── swagger.ts     # Swagger 装配
 ├── controllers     # 控制层：请求/响应处理、参数校验、调用 service
@@ -42,7 +43,7 @@ src
 │   ├── rolePermission.ts # 角色-权限关联（复合主键）
 │   ├── timelineEvent.ts # 时间轴事件模型
 │   └── users.ts       # 用户模型（phone / role_id / membership_expires_at / status）
-├── seeders         # 示例数据（npx sequelize-cli-ts-js db:seed:all）
+├── seeders         # 示例数据（npm run db:seed）
 ├── routes          # 路由层：路径映射
 │   ├── index.ts       # 路由入口，挂载各子路由
 │   ├── authRoutes.ts  # 注册 / 登录 / 验证码 / 密码管理
@@ -101,12 +102,21 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
 > ⚠️ 环境变量由 `src/config/env.ts` 统一加载，而 dotenv 以 `process.cwd()` 为基准查找 `.env`，因此请从 `server` 目录启动服务（或用 `npm run dev -w server`）。
+>
+> 生产部署设置 `DB_NAME` 后，运行时连接与 `sequelize-cli` 迁移都会用 `DB_*` 覆盖 `config.json`；
+> 因此 `config.json` 可以保持占位值，生产密码只存在 `server/.env`。一键部署脚本见仓库根目录的
+> [`deploy/README.md`](../deploy/README.md)。
 
 | 变量                 | 必填 | 默认          | 说明                                                                 |
 | :------------------- | :--- | :------------ | :------------------------------------------------------------------- |
 | `JWT_SECRET`         | 是   | 无            | JWT 签名密钥。未配置时登录接口会在 `jwt.sign` 处抛错                 |
 | `PORT`               | 否   | `3000`        | 服务监听端口                                                         |
 | `NODE_ENV`           | 否   | `development` | 决定 `config/config.json` 读取哪一组数据库配置                       |
+| `DB_HOST`            | 否   | 取 `config.json` | 生产数据库地址；设置 `DB_NAME` 后生效                             |
+| `DB_PORT`            | 否   | `3306`        | 生产数据库端口                                                       |
+| `DB_NAME`            | 否   | 取 `config.json` | 生产数据库名；一旦设置，会覆盖 `config.json` 对应环境的连接信息   |
+| `DB_USER`            | 否   | 取 `config.json` | 生产数据库用户                                                   |
+| `DB_PASSWORD`        | 否   | 取 `config.json` | 生产数据库密码；只放在 `server/.env`，不要写进 `config.json`     |
 | `JWT_EXPIRES_IN`     | 否   | `1h`          | Access Token 有效期。格式为数字 + `s/m/h/d`，填错格式会告警并回退默认值 |
 | `JWT_REFRESH_EXPIRES_IN` | 否 | `7d`        | Refresh Token 有效期。到期后需重新登录（服务端无吊销机制）           |
 | `UPLOAD_DIR`         | 否   | `uploads`     | 图片上传目录，相对路径以 `process.cwd()` 为基准解析（即 server 目录） |
@@ -118,8 +128,8 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ### 2. 初始化数据库
 
 ```bash
-npx sequelize-cli-ts-js db:migrate
-npx sequelize-cli-ts-js db:seed:all   # 可选：注入示例分类树 + 笔记 + 文章 + 时间轴事件
+npm run db:migrate
+npm run db:seed   # 可选：注入示例分类树 + 笔记 + 文章 + 时间轴事件
 ```
 
 > `db:migrate` 除了业务表，还会写入 RBAC 的**系统数据**：内置角色（管理员 / 普通用户）
@@ -151,7 +161,7 @@ npx sequelize-cli-ts-js db:seed:all   # 可选：注入示例分类树 + 笔记 
 > 两个业务 seeder 的 `id` 都是**写死**的：示例笔记的「延伸阅读」分支链接到
 > `/articles/1`、`/articles/2`、`/articles/3`，id 一旦由自增分配就会错位、链接失效。
 >
-> 回滚用 `npx sequelize-cli-ts-js db:seed:undo:all`。
+> 回滚用 `npm run db:seed:undo`。
 > ⚠️ 注意它同样依赖"顺序"：`demo-articles` 的 `down` 按 id 删除，`demo-notes` 的 `down` 按标题删除。
 
 > ⚠️ **不要给 `server/package.json` 添加 `"type": "module"`。** 迁移文件是 `.ts`，而 `sequelize-cli` 底层的 `umzug` 用 `require()` 加载它们；一旦声明 `type: module`，Node 会把 `src` 下的 `.ts` 全部视作 ESM，`db:migrate` 会直接报
